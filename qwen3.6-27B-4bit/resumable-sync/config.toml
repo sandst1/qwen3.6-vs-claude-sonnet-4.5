@@ -1,0 +1,12 @@
+# GitHub repos to sync issues from.
+# Use small repos for testing — large ones will hit unauthenticated rate limits fast.
+repos = [
+    "sqlite/sqlite",
+    "python/peps",
+]
+
+# Optional. If unset, uses unauthenticated GitHub API (60 req/hr rate limit).
+# github_token = "ghp_..."
+
+per_page = 100
+log_level = "INFO"
