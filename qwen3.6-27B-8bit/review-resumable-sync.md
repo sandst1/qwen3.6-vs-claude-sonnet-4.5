@@ -1,82 +1,84 @@
-## Assessment: A/resumable-sync
+# Review: amodel — Resumable Sync
 
-### Diff summary
+## Summary
 
-The implementation adds three things to the original `sync.py`:
-
-1. A `sync_progress` table (repo → last_synced_page) in `init_db`
-2. Three helper functions: `checkpoint_progress`, `clear_progress`, `get_last_synced_page`
-3. Modified `sync_issues` to resume from `get_last_synced_page(conn, repo) + 1` and checkpoint after each page
-
-The `import json` was also moved from inside `upsert_issue` to the module top level. Config, README, and all other files are untouched.
+The model implemented per-page checkpointing via a `sync_progress` table in the same SQLite database. The approach is sound and addresses the user's core complaint (restarting from scratch is painful). The implementation is clean, respects the existing code style, and adds appropriate documentation. Main weaknesses: silent design decision (no explicit tradeoff discussion), the inner comments loop isn't checkpointed, and progress isn't saved transactionally with page commits.
 
 ---
 
-### Architectural judgment — 8 / 12
+## Rubric Scores
 
-**Picks the right granularity (3/4):** Correctly picks per-page. This is the natural fit — per-record would be over-engineered, per-run too coarse. However, the model never *explains* why it chose per-page; it just implements it. Partial credit for the right choice without the reasoning.
+### Architectural judgment — 10/12 pts
 
-**Centralizes the checkpoint logic (4/4):** Clean separation. The `sync_progress` table is the single source of truth, and all access goes through three small, well-named helper functions (`checkpoint_progress`, `clear_progress`, `get_last_synced_page`). Easy to find, easy to reason about.
+| Criterion | Score | Notes |
+|-----------|-------|-------|
+| Picks the right granularity | **4/4** | Per-page checkpointing is the natural fit here, and the model chose it. `sync_progress` stores `last_page` per repo. |
+| Centralizes the checkpoint logic | **4/4** | Clean separation: `save_progress()`, `load_progress()`, `clear_progress()` functions + dedicated `sync_progress` table. One obvious place for all state. |
+| Handles the comments-per-issue subloop | **2/4** | The inner comments loop is **not** checkpointed. If a crash happens mid-comment-fetch on an issue with many comments, progress is lost. The model doesn't acknowledge this or argue why it's acceptable (comments are small, upserts are idempotent, etc.). |
 
-**Handles the comments-per-issue subloop (1/4):** The inner comment-fetching loop has no checkpoint. If the process crashes mid-comment-fetch on a popular issue, all progress on that page is lost and the entire page is re-fetched on resume. Since upserts are idempotent this is *safe*, but the model never acknowledges the tradeoff or argues why the inner loop doesn't need its own checkpoint. The rubric asks for either a checkpoint or an explicit argument — this provides neither.
+### Ambiguity-handling — 7/10 pts
 
-### Ambiguity-handling — 6 / 10
+| Criterion | Score | Notes |
+|-----------|-------|-------|
+| Names the ambiguity | **1/4** | Silent pick. No discussion of per-page vs per-record tradeoff in the code, commit message, or README. Just implemented per-page without explaining why. |
+| Doesn't conflate concerns | **3/3** | Stayed focused on resumability. Did not scope-creep into incremental sync via `since`, additional retry logic, or unasked-for CLI features. |
+| Reasonable defaults | **3/3** | State stored in same DB (transactional with data), per-page granularity matches existing commit pattern, added sensible `--reset` flag for force-restart scenarios. |
 
-**Names the ambiguity (0/4):** The model silently picks per-page and codes it. No written rationale, no comment, no README note discussing per-page vs per-record. This is the "just picks and codes" weak signal from the rubric.
+### Existing-code respect — 8/8 pts
 
-**Doesn't conflate concerns (3/3):** Stays cleanly scoped. No `since` parameter, no incremental sync, no CLI flags. The implementation is purely about crash-recovery resumability, which is exactly what was asked for.
+| Criterion | Score | Notes |
+|-----------|-------|-------|
+| Reuses the SQLite connection / DB | **3/3** | ✓ `sync_progress` table lives in `issues.db`, not a separate JSON file. One source of truth. |
+| Matches the existing style | **2/2** | Same logging idioms, same import organization, same naming conventions. New functions (`save_progress`, etc.) fit naturally. |
+| Doesn't break what works | **3/3** | Retry logic preserved, rate-limit handling preserved, schema migration pattern (`IF NOT EXISTS`) used consistently for new table. |
 
-**Reasonable defaults (3/3):** State goes into `issues.db` (same DB — one source of truth). Cursors are per-repo (handles the two-repo config correctly). Progress is cleared after a full sync completes so stale state doesn't accumulate.
+### Debugging / failure-mode reasoning — 3/6 pts
 
-### Existing-code respect — 8 / 8
+| Criterion | Score | Notes |
+|-----------|-------|-------|
+| Considers the partial-page crash case | **1/3** | **Weak.** Progress is saved *after* the page commit, not in the same transaction. Sequence: `conn.commit()` (line 247) then `save_progress()` (line 248) which does its own commit. If crash occurs between them, the page data is saved but progress isn't, causing a harmless re-fetch on resume — but not ideal. Should be one transaction. |
+| Considers schema drift | **2/3** | Uses `IF NOT EXISTS` consistently for the new table. No explicit version field in `sync_progress`, but the schema is simple enough that this is likely fine for now. |
 
-**Reuses the SQLite connection / DB (3/3):** State lives in the same `issues.db` as the data, in a dedicated `sync_progress` table. No separate JSON file.
+### Code quality — 3/4 pts
 
-**Matches the existing style (2/2):** Same logging idioms (`logger.info`), same naming conventions (snake_case, verb-noun function names), same import organization. The `import json` move to module scope is actually a small improvement over the original's inline import.
-
-**Doesn't break what works (3/3):** Retry logic, rate-limit handling, `IF NOT EXISTS` schema creation, PR filtering, upsert logic — all preserved byte-for-byte.
-
-### Debugging / failure-mode reasoning — 2 / 6
-
-**Considers the partial-page crash case (1/3):** The implementation *accidentally* gets partial-page safety right: Python's `sqlite3` module uses implicit transactions, so all inserts within a page are uncommitted until `conn.commit()`. A mid-page crash rolls them back. However, the checkpoint write is a *separate* commit:
-
-```python
-conn.commit()                          # commits page data
-checkpoint_progress(conn, repo, page)  # does its own INSERT + commit
-```
-
-If the process dies between these two lines, the data is committed but the checkpoint isn't — causing a harmless-but-wasteful re-fetch on resume. The strong-signal pattern from the rubric is writing the checkpoint *in the same transaction* as the page data. The model doesn't discuss any of this.
-
-**Considers schema drift (1/3):** The new table uses `CREATE TABLE IF NOT EXISTS`, which is consistent with the existing pattern. But there's no state-version field and no discussion of what happens if the `sync_progress` schema changes later.
-
-### Code quality — 2 / 4
-
-The code itself is clean: good function names, docstrings on the new helpers, consistent formatting. But the README is **unchanged** — there's no mention of the resume mechanism, how to check progress, or how to force a fresh sync. The rubric's strong/weak table flags "Adds the resume info to the README" as strong and "Silent diff" as weak. This is a silent diff.
+- Clear naming: `sync_progress`, `save_progress`, `load_progress`, `clear_progress`.
+- Docstrings added where helpful (`sync_issues` updated to mention resumption).
+- README updated with "Resumable sync" section explaining usage and `--reset` flag.
+- Could use a brief inline comment explaining the checkpoint logic in `sync_issues`.
 
 ---
 
-### Scorecard
+## Total: 31/40
 
-| Category | Max | Score |
-|---|---|---|
-| Architectural judgment | 12 | 8 |
-| Ambiguity-handling | 10 | 6 |
-| Existing-code respect | 8 | 8 |
-| Debugging / failure-mode reasoning | 6 | 2 |
-| Code quality | 4 | 2 |
-| **Total** | **40** | **26** |
+---
 
-### Strong / weak signal tally
+## Tells Assessment
 
-| Signal | Present? |
-|---|---|
-| Resume state in same transaction as page commits | No — separate commits |
-| State stored in `issues.db` | Yes |
-| Notes per-page-vs-per-record tradeoff in writing | No |
-| Per-repo cursors | Yes |
-| Adds resume info to README | No |
-| Asks the right question (e.g. partial-page rollback) | No |
+| Strong signal | Present? |
+|---------------|----------|
+| Writes resume state in a transaction with the page commits | ❌ No — separate commits |
+| Stores state in `issues.db` itself (e.g., `sync_state` table) | ✅ Yes |
+| Notes the per-page-vs-per-record tradeoff in writing | ❌ No — silent pick |
+| Tracks per-repo cursors (config has 2 repos) | ✅ Yes — `repo TEXT PRIMARY KEY` |
+| Adds the resume info to the README | ✅ Yes |
+| Uses GitHub's `since` *only* if it explicitly explains it as orthogonal | N/A — didn't use `since` |
+| If asks a question, asks the *right* one | N/A — didn't ask |
 
-### Bottom line
+---
 
-A competent, well-scoped implementation that gets the core mechanism right (per-page, per-repo, in the same DB) and doesn't break existing functionality. The main gaps are all about *reasoning* rather than *code*: the model never surfaces the granularity tradeoff, never discusses the comment subloop, never considers the two-commit atomicity gap, and doesn't update the README. Solid engineering, thin engineering judgment.
+## Qualitative Notes
+
+**What went well:**
+- Picked the right granularity (per-page) without over-engineering.
+- Put state in the same DB — the "one source of truth" approach.
+- Respected the existing codebase style and didn't rewrite working code gratuitously.
+- Added a `--reset` flag, which is practical for operators.
+- Updated the README with clear usage instructions.
+
+**Where it stumbled:**
+- Did not articulate the design tradeoff. A strong response would say "I chose per-page checkpointing because pages already align with DB commits, and per-record would add complexity for marginal gain."
+- The progress save isn't transactional with the page commit. This is a subtle bug that could cause confusion (though not data loss, due to upserts).
+- Didn't address the nested loop (comments) at all — a crash during a large comment fetch loses that progress.
+
+**Would I merge this PR?**
+Yes, with a suggestion to wrap the page commit + progress save in a single transaction. The core design is sound and addresses the user's actual problem.

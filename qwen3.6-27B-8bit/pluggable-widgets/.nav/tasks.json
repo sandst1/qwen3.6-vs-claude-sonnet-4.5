@@ -1,0 +1,203 @@
+[
+  {
+    "id": "1-1",
+    "name": "Create HTML skeleton",
+    "description": "Create the HTML skeleton with a board container div, a controls div containing a \"Shuffle\" button and a move counter element, and a title/header. The structure should be clean and semantic, ready for CSS and JS to attach to.",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "The HTML file contains a root container div, a board div, and a controls div",
+      "The controls div includes a button element with id or class for shuffle and a span/div for move counter display",
+      "The page has a proper DOCTYPE, html, head, and body structure"
+    ]
+  },
+  {
+    "id": "1-2",
+    "name": "Add CSS styling for grid layout and tile appearance",
+    "description": "Add a `<style>` block with CSS Grid layout for the 5×5 board, tile styling with rounded corners, box shadows, and flex-centered numbers. Implement the dark charcoal board background, empty slot styling, and smooth CSS transitions for tile movement.",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Board uses `grid-template-columns: repeat(5, 1fr)` for a 5×5 grid",
+      "Tiles have `border-radius: 8px`, `box-shadow`, and `display: flex` with centered content",
+      "Board background is dark charcoal (e.g., `#1a1a2e`)",
+      "Tiles have `transition: all 0.15s ease` for smooth movement",
+      "Empty slot has a subtle dark/transparent appearance",
+      "Hover effect on clickable tiles (brightness or scale change)"
+    ]
+  },
+  {
+    "id": "1-3",
+    "name": "Add CSS polish — gradients, typography, responsive sizing",
+    "description": "Add CSS for the gradient backgrounds on tiles, system font stack for typography, and responsive sizing using `vw`/`vh` or `aspect-ratio`. Define a base set of ~12 vibrant HSL-based gradient classes (reds, oranges, pinks, purples, blues, teals, greens, yellows) that will be randomly assigned to tiles.",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "At least 12 distinct gradient classes are defined using HSL color values",
+      "Typography uses a clean system font stack",
+      "Board sizing is responsive using relative units (vw/vh or aspect-ratio)",
+      "Gradient classes are designed to be visually distinct and vibrant"
+    ]
+  },
+  {
+    "id": "1-4",
+    "name": "Implement JS core — board state, render, click-to-slide, adjacency",
+    "description": "Implement the core game logic in a `<script>` block: board state as a flat array of 25 elements (`[1, 2, ..., 24, 0]`), a render function that updates the DOM based on state, click-to-slide logic that moves a tile into the empty slot, and an adjacency check that verifies two positions share an edge (not diagonal).",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Board state is a flat array of 25 elements with 0 representing the empty slot",
+      "Adjacency check correctly identifies edge-adjacent positions (not diagonal)",
+      "Clicking a tile adjacent to the empty slot moves it into the empty slot",
+      "Render function updates the DOM to reflect the current board state",
+      "Clicking a non-adjacent tile has no effect"
+    ]
+  },
+  {
+    "id": "1-5",
+    "name": "Implement JS shuffle — random valid moves from solved state",
+    "description": "Implement the shuffle algorithm: start from the solved state, perform 500–1000 random valid moves (swap empty with an adjacent tile), ensuring the puzzle is always solvable. Wire up a \"Shuffle\" button to reset and re-shuffle the board. Reset the move counter on shuffle.",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Shuffle starts from the solved state (1–24 in order, empty at index 24)",
+      "Shuffle performs 500–1000 random valid adjacent swaps",
+      "The resulting state is always solvable by construction",
+      "Shuffle button resets the board and re-shuffles",
+      "Move counter resets to 0 after shuffling"
+    ]
+  },
+  {
+    "id": "1-6",
+    "name": "Implement JS win detection and celebration",
+    "description": "After every move, check if the board is in the solved state (tiles 1–24 in row-major order, empty at index 24). On win, display a visual celebration — a \"You Win!\" overlay or a subtle flash animation. Prevent further moves after winning.",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Win check runs after every valid move",
+      "Win is detected when tiles 1–24 are in order and empty is at index 24",
+      "A visual celebration appears on win (overlay, flash, or animation)",
+      "No further moves are accepted after winning"
+    ]
+  },
+  {
+    "id": "1-7",
+    "name": "Wire up gradient assignment and polish interactions",
+    "description": "On game start and shuffle, randomly assign the curated gradient classes to tiles 1–24 (shuffle the gradient list, not the tile numbers). Ensure the move counter increments on each valid move. Add polish such as hover effects, disabled state for non-adjacent tiles, and a clean visual hierarchy.",
+    "status": "done",
+    "plan": 1,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Each tile 1–24 receives a randomly assigned gradient from the palette on game start",
+      "The same gradient is never assigned to two tiles simultaneously",
+      "Move counter increments by 1 for each valid move",
+      "Non-adjacent tiles are visually distinguishable as non-clickable",
+      "The overall UI is clean with clear visual hierarchy"
+    ]
+  },
+  {
+    "id": "2-1",
+    "name": "Implement mousedown handler and ghost creation for drag-and-drop",
+    "description": "Add the `mousedown` event listener on `#board` using event delegation. When a user clicks on a `.tile` that is not `.empty` and is `.clickable` (adjacent to the empty slot), record the dragged tile index, mouse down position, and set `dragging = true`. Prevent text selection with `e.preventDefault()`. Then, when the mouse moves beyond `DRAG_THRESHOLD` (5px) from the mousedown position, create a `.tile.drag-ghost` element: clone the gradient class and text content from the dragged tile, position it `fixed` at the mouse coordinates (centered), append it to `document.body`, and store it in `ghostEl`.",
+    "status": "done",
+    "plan": 2,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Clicking a non-clickable tile or the empty slot does nothing",
+      "Clicking a clickable tile sets `dragging = true` and records state",
+      "Moving the mouse beyond 5px from the mousedown position creates a ghost element with the correct gradient class and text",
+      "The ghost element is appended to `document.body` with `position: fixed`",
+      "Moving less than 5px does not create a ghost (prevents false positives from tiny jitters)"
+    ]
+  },
+  {
+    "id": "2-2",
+    "name": "Implement mousemove handler to update ghost position and board highlight",
+    "description": "Add a `mousemove` listener on `document` that runs while `dragging` is true. Update the ghost element's `left` and `top` styles to follow the cursor (centered on the tile). Use `document.elementFromPoint(e.clientX, e.clientY)` to detect if the cursor is over the `#board` element. If yes, add the `.drag-over` class to `#board`; otherwise, remove it.",
+    "status": "done",
+    "plan": 2,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "The ghost element follows the cursor smoothly during drag",
+      "The `.drag-over` class is added to `#board` when the cursor is over the board",
+      "The `.drag-over` class is removed when the cursor leaves the board",
+      "The handler does nothing when `dragging` is false"
+    ]
+  },
+  {
+    "id": "2-3",
+    "name": "Implement mouseup handler to drop the tile",
+    "description": "Add a `mouseup` listener on `document` that handles the drop. When `dragging` is true: remove `.drag-over` from `#board`, remove `ghostEl` from the DOM and set it to `null`. If the cursor is over the `#board`, find which tile cell the cursor is over. If the cursor is over the empty slot (`.tile.empty`), swap the dragged tile's value with the empty slot in `board`, increment `moves`, call `render()`, and check `checkWin()` → `celebrate()` if won. If the cursor is over a non-empty tile or outside the board, do nothing (cancel the drag). Set `dragging = false` and `draggedTileIndex = null`.",
+    "status": "done",
+    "plan": 2,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Dropping a tile onto the empty slot swaps the tile, increments the move counter, and re-renders the board",
+      "Dropping a tile onto a non-empty tile does nothing (no state change)",
+      "Dropping a tile outside the board does nothing (no state change)",
+      "The ghost element is always removed from the DOM after a drop",
+      "The `.drag-over` class is always removed after a drop",
+      "If the board is solved after the swap, `celebrate()` is called"
+    ]
+  },
+  {
+    "id": "2-4",
+    "name": "Wire up global event listeners and ensure cleanup",
+    "description": "Add `mousemove` and `mouseup` listeners on `document` (not just `#board`) using `once: true` or manual removal when the drag ends. This ensures that mouse events released outside the board area are still caught and the drag state is properly cleaned up. Ensure the `mousedown` listener also calls `e.preventDefault()` for tiles to prevent text selection during drag.",
+    "status": "done",
+    "plan": 2,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Releasing the mouse outside the board area does not cause errors and cleans up state",
+      "Releasing the mouse on a non-board element does not cause errors and cleans up state",
+      "The `mousemove` and `mouseup` listeners on `document` are properly removed after the drag ends",
+      "Text selection is prevented during drag on tiles"
+    ]
+  },
+  {
+    "id": "2-5",
+    "name": "Write automated tests for drag-and-drop functionality",
+    "description": "Write automated tests (using a browser testing framework like Playwright or a headless browser approach) for the drag-and-drop feature. Test the following scenarios:\n\n1. Drag a clickable tile onto the empty slot → tile swaps, move counter increments\n2. Drag a non-clickable tile → nothing happens\n3. Drag a tile and release outside the board → nothing happens\n4. Drag a tile and release on another non-empty tile → nothing happens\n5. After winning, drag attempts are blocked\n6. Ghost element is created and removed correctly",
+    "status": "done",
+    "plan": 2,
+    "relatedFiles": [
+      "sliding-puzzle.html"
+    ],
+    "acceptanceCriteria": [
+      "Tests verify that dragging a clickable tile onto the empty slot swaps the tile and increments the move counter",
+      "Tests verify that dragging a non-clickable tile has no effect",
+      "Tests verify that dropping outside the board has no effect",
+      "Tests verify that dropping on a non-empty tile has no effect",
+      "Tests verify that after winning, drag attempts are blocked",
+      "Tests verify that the ghost element is created during drag and removed after drop"
+    ]
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "baseUrl": "http://192.168.0.226:8000/v1",
+  "model": "Qwen3.6-27B-MLX-8bit",
+  "provider": "openai",
+  "apiKey": "omlx1234",
+
+
+  "verbose": true,
+  "sandbox": false,
+
+  "contextWindow": 65536,
+  "handoverThreshold": 0.8,
+
+  "theme": "nordic"
+}

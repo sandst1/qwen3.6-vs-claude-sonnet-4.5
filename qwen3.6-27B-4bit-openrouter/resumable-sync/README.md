@@ -22,22 +22,9 @@ runs, drop a token into `config.toml`.
 3. For each issue, also fetches its comments.
 4. Upserts everything into `issues.db`.
 
-## Resumable sync
-
-The script tracks how far it got in a `sync_progress` table inside `issues.db`.
-If a run is interrupted (Ctrl-C, host restart, API error), simply run it again
-and it will pick up where it left off.
-
-To force a full re-sync from scratch:
-
-```bash
-python sync.py --reset
-```
-
 ## Schema
 
-See `init_db()` in `sync.py`. Three tables: `issues`, `comments`, and
-`sync_progress`.
+See `init_db()` in `sync.py`. Two tables: `issues` and `comments`.
 
 ## Notes
 

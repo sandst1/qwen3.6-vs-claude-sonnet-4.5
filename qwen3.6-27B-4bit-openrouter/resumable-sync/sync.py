@@ -7,7 +7,7 @@ run analytics against them without hammering the API every time.
 Run with:
     python sync.py
 """
-import argparse
+import json
 import logging
 import sqlite3
 import sys
@@ -72,8 +72,7 @@ def init_db(conn: sqlite3.Connection):
 
         CREATE TABLE IF NOT EXISTS sync_progress (
             repo TEXT PRIMARY KEY,
-            last_page INTEGER NOT NULL,
-            last_issue_id INTEGER
+            last_synced_page INTEGER NOT NULL
         );
         """
     )
@@ -114,40 +113,11 @@ def request_with_retry(session: requests.Session, url: str, params: dict, max_re
     raise RuntimeError(f"Exhausted retries for {url}: {last_err}")
 
 
-def save_progress(conn: sqlite3.Connection, repo: str, page: int, last_issue_id: int | None = None):
-    """Persist how far we got so a future run can resume."""
-    conn.execute(
-        "INSERT OR REPLACE INTO sync_progress (repo, last_page, last_issue_id) VALUES (?, ?, ?)",
-        (repo, page, last_issue_id),
-    )
-    conn.commit()
-
-
-def load_progress(conn: sqlite3.Connection, repo: str) -> tuple[int, int | None]:
-    """Return (last_page, last_issue_id) or (0, None) if no progress exists."""
-    row = conn.execute(
-        "SELECT last_page, last_issue_id FROM sync_progress WHERE repo = ?", (repo,)
-    ).fetchone()
-    if row:
-        return row
-    return (0, None)
-
-
-def clear_progress(conn: sqlite3.Connection, repo: str | None = None):
-    """Clear progress for a single repo, or all repos if repo is None."""
-    if repo:
-        conn.execute("DELETE FROM sync_progress WHERE repo = ?", (repo,))
-    else:
-        conn.execute("DELETE FROM sync_progress")
-    conn.commit()
-
-
 def upsert_issue(conn: sqlite3.Connection, repo: str, issue: dict):
     # GitHub's issues endpoint also returns PRs; skip those.
     if "pull_request" in issue:
         return False
 
-    import json
     conn.execute(
         """
         INSERT INTO issues (
@@ -204,20 +174,37 @@ def upsert_comment(conn: sqlite3.Connection, issue_id: int, comment: dict):
     )
 
 
+def checkpoint_progress(conn: sqlite3.Connection, repo: str, page: int):
+    """Record that we've finished processing a given page for a repo."""
+    conn.execute(
+        "INSERT OR REPLACE INTO sync_progress (repo, last_synced_page) VALUES (?, ?)",
+        (repo, page),
+    )
+    conn.commit()
+
+
+def clear_progress(conn: sqlite3.Connection, repo: str):
+    """Remove progress entries for a repo now that it's fully synced."""
+    conn.execute("DELETE FROM sync_progress WHERE repo = ?", (repo,))
+    conn.commit()
+
+
+def get_last_synced_page(conn: sqlite3.Connection, repo: str) -> int:
+    """Return the last page we successfully synced for a repo, or 0."""
+    row = conn.execute(
+        "SELECT last_synced_page FROM sync_progress WHERE repo = ?", (repo,)
+    ).fetchone()
+    return row[0] if row else 0
+
+
 def sync_issues(session: requests.Session, conn: sqlite3.Connection, repo: str, per_page: int):
-    """Fetch all issues for a repo and write them to the DB.
-
-    Resumes from the last saved page if a previous run was interrupted.
-    """
-    last_page, last_issue_id = load_progress(conn, repo)
-
-    if last_page > 0:
-        logger.info("Resuming %s from page %d (last issue id %s)", repo, last_page, last_issue_id)
-    else:
-        logger.info("Syncing issues for %s", repo)
+    """Fetch all issues for a repo and write them to the DB."""
+    start_page = get_last_synced_page(conn, repo) + 1
+    if start_page > 1:
+        logger.info("Resuming %s from page %d", repo, start_page)
 
     url = f"https://api.github.com/repos/{repo}/issues"
-    page = last_page + 1
+    page = start_page
     total_issues = 0
 
     while True:
@@ -234,18 +221,16 @@ def sync_issues(session: requests.Session, conn: sqlite3.Connection, repo: str, 
             break
 
         issue_count_in_page = 0
-        last_seen_id = None
         for issue in batch:
             if upsert_issue(conn, repo, issue):
                 issue_count_in_page += 1
-                last_seen_id = issue["id"]
 
                 # If the issue has comments, fetch them too
                 if issue.get("comments", 0) > 0:
                     fetch_comments_for_issue(session, conn, issue)
 
         conn.commit()
-        save_progress(conn, repo, page, last_seen_id)
+        checkpoint_progress(conn, repo, page)
         total_issues += issue_count_in_page
         logger.info("Page %d: %d issues (total so far: %d)", page, issue_count_in_page, total_issues)
 
@@ -253,6 +238,7 @@ def sync_issues(session: requests.Session, conn: sqlite3.Connection, repo: str, 
             break
         page += 1
 
+    clear_progress(conn, repo)
     logger.info("Done with %s: %d issues total", repo, total_issues)
 
 
@@ -273,10 +259,6 @@ def fetch_comments_for_issue(session: requests.Session, conn: sqlite3.Connection
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sync GitHub issues into a local SQLite DB")
-    parser.add_argument("--reset", action="store_true", help="Clear saved progress and start from scratch")
-    args = parser.parse_args()
-
     config = load_config()
     setup_logging(config.get("log_level", "INFO"))
 
@@ -292,9 +274,6 @@ def main():
     init_db(conn)
 
     try:
-        if args.reset:
-            clear_progress(conn)
-            logger.info("Progress cleared — starting fresh")
         for repo in config["repos"]:
             sync_issues(session, conn, repo, per_page=config.get("per_page", 100))
     finally:

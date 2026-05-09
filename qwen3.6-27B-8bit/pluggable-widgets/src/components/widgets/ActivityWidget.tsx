@@ -1,32 +1,40 @@
-import { registry } from "../../plugins/registry";
-import type { WidgetDescriptor } from "../../plugins/widget-types";
+import { useEffect, useState } from "react";
 import { fetchActivity, type ActivityEvent } from "../../api";
-import type { ComponentType } from "react";
+import { registerWidget } from "../../lib";
 
-function ActivityBody({ data }: { data: ActivityEvent[] }) {
+export function ActivityWidget() {
+  const [events, setEvents] = useState<ActivityEvent[] | null>(null);
+
+  useEffect(() => {
+    fetchActivity().then(setEvents);
+    const id = setInterval(() => fetchActivity().then(setEvents), 45_000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <ul className="activity-list">
-      {data.map((e) => (
-        <li key={e.id} className="activity-item">
-          <span>
-            <strong>{e.actor}</strong> {e.action}
-          </span>
-          <span className="activity-when">{e.when}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="widget-body">
+      {events == null ? (
+        <span className="loading">Loading…</span>
+      ) : (
+        <ul className="activity-list">
+          {events.map((e) => (
+            <li key={e.id} className="activity-item">
+              <span>
+                <strong>{e.actor}</strong> {e.action}
+              </span>
+              <span className="activity-when">{e.when}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
-export const activityWidgetDescriptor: WidgetDescriptor<ActivityEvent[]> = {
+registerWidget({
   id: "activity",
   title: "Recent activity",
   subtitle: "all environments",
+  component: ActivityWidget,
   gridColumnSpan: 7,
-  wrapperClass: "widget--activity",
-  Component: ActivityBody as ComponentType<{ data: ActivityEvent[] }>,
-  fetchData: fetchActivity,
-  refreshIntervalMs: 45_000,
-};
-
-registry.add(activityWidgetDescriptor);
+});

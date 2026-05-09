@@ -1,15 +1,28 @@
-import { registry } from "../../plugins/registry";
-import type { WidgetDescriptor } from "../../plugins/widget-types";
+import { useEffect, useState } from "react";
 import { fetchSummaryStats, type SummaryStats } from "../../api";
-import type { ComponentType } from "react";
+import { registerWidget } from "../../lib";
 
-function StatsBody({ data }: { data: SummaryStats }) {
+export function StatsWidget() {
+  const [data, setData] = useState<SummaryStats | null>(null);
+
+  useEffect(() => {
+    fetchSummaryStats().then(setData);
+    const id = setInterval(() => fetchSummaryStats().then(setData), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <div className="stat-grid">
-      <Stat label="req/min" value={data.requestsPerMin.toLocaleString()} delta={data.requestsDelta} />
-      <Stat label="p99 ms" value={String(data.p99LatencyMs)} delta={data.latencyDelta} invertColor />
-      <Stat label="users" value={data.activeUsers.toLocaleString()} delta={data.usersDelta} />
-      <Stat label="err %" value={data.errorRate.toFixed(2)} delta={data.errorRateDelta} invertColor />
+    <div className="widget-body">
+      {data == null ? (
+        <span className="loading">Loading…</span>
+      ) : (
+        <div className="stat-grid">
+          <Stat label="req/min" value={data.requestsPerMin.toLocaleString()} delta={data.requestsDelta} />
+          <Stat label="p99 ms" value={String(data.p99LatencyMs)} delta={data.latencyDelta} invertColor />
+          <Stat label="users" value={data.activeUsers.toLocaleString()} delta={data.usersDelta} />
+          <Stat label="err %" value={data.errorRate.toFixed(2)} delta={data.errorRateDelta} invertColor />
+        </div>
+      )}
     </div>
   );
 }
@@ -39,15 +52,10 @@ function Stat({
   );
 }
 
-export const statsWidgetDescriptor: WidgetDescriptor<SummaryStats> = {
+registerWidget({
   id: "stats",
   title: "Summary",
   subtitle: "last 5 min",
+  component: StatsWidget,
   gridColumnSpan: 3,
-  wrapperClass: "widget--stats",
-  Component: StatsBody as ComponentType<{ data: SummaryStats }>,
-  fetchData: fetchSummaryStats,
-  refreshIntervalMs: 30_000,
-};
-
-registry.add(statsWidgetDescriptor);
+});
