@@ -10,8 +10,9 @@ import {
   CartesianGrid,
 } from "recharts";
 import { fetchLatencySeries, type LatencyPoint } from "../../api";
+import { registry } from "../../lib/widget-registry";
+import type { WidgetType } from "../../lib/widget-schema";
 
-// Hardcoded — we only show p95 and p99 for now. p50 is fetched but unused.
 const SERIES_TO_PLOT = ["p95", "p99"] as const;
 
 export function LatencyWidget() {
@@ -59,3 +60,13 @@ export function LatencyWidget() {
     </div>
   );
 }
+
+const latencyConfig: WidgetType = {
+  id: "latency",
+  title: "Request Latency",
+  subtitle: "last 2h",
+  size: "large",
+  Component: LatencyWidget,
+};
+
+registry.register(latencyConfig);

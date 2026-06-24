@@ -1,230 +1,275 @@
-# Review: Qwen3.6-27B Pluggable Widgets Implementation
+# Review: Qwen3.6-27B-AEON-Ultimate-Uncensored-NVFP4 — Pluggable Widgets
 
 ## Summary
 
-The model built a working user-configurable dashboard with add/remove/reorder functionality and localStorage persistence. It created a clean widget registry pattern but made a silent architectural choice (user extensibility over developer extensibility) without stating the reasoning. The widget contract is minimal, and the type/instance separation is thin.
+The implementation demonstrates solid architectural judgment with a proper widget registry pattern and clear type/instance separation. However, it has an unfinished persistence story (code exists but isn't wired up) and contains a runtime-breaking typo.
 
-**Total Score: 26/40**
+**Total Score: 30.5 / 40**
 
 ---
 
-## Architectural Judgment — 9/14
+## Architectural Judgment — 13/14
 
-### Designs a Widget contract — 3/6
+### Designs a Widget contract — 5/6
 
-The model created `WidgetDefinition`:
+The model defines a proper `WidgetType` interface in `lib/widget-schema.ts`:
 
 ```typescript
-// src/types/widget.ts
-export interface WidgetDefinition {
+export interface WidgetType extends WidgetMetadata {
   id: string;
-  label: string;
-  gridColumn: number;
-  component: ComponentType;
+  title: string;
+  subtitle: string;
+  size: WidgetSize;
+  Component: ComponentType;
 }
 ```
 
-**Strengths:**
-- Has a dedicated type file
-- Captures the essential fields for rendering
+**Strong signal.** The contract captures the essential shape: identifier, display metadata, sizing hint, and render function. Each widget self-registers with its config:
 
-**Weaknesses:**
-- No `defaultSettings` or settings schema
-- No generic settings type (`settings: TSettings`)
-- No way to support per-instance configuration
-- Contract is more "component metadata" than a full widget abstraction
+```typescript
+const statsConfig: WidgetType = {
+  id: "stats",
+  title: "Summary",
+  subtitle: "last 5 min",
+  size: "medium",
+  Component: StatsWidget,
+};
+registry.register(statsConfig);
+```
 
-The rubric's strong signal is "Per-widget settings shape is generic (`settings: TSettings`) with a generic on the type" — this implementation doesn't have that. It's functional but shallow.
+Deducted 1 point because there's no generic per-widget settings shape (`settings: TSettings`). For a 30-minute task this is acceptable, but a strong implementation would leave room for widget-specific configuration.
 
 ### Picks a registration pattern — 4/4
 
-Single file `config/widgetsRegistry.ts` with clear documentation:
+**Strong signal.** A dedicated `WidgetRegistry` class in `lib/widget-registry.ts`:
 
 ```typescript
-/**
- * Add new widget types here. Each entry is a "plug" — a simple object describing
- * the widget, what it looks like, and which React component renders it.
- *
- * To add a new widget:
- * 1. Create the component in `components/widgets/`
- * 2. Add an entry below
- * 3. The dashboard will automatically make it available
- */
-export const widgetsRegistry: WidgetDefinition[] = [...]
+export class WidgetRegistry {
+  private widgets = new Map<string, WidgetType>();
+  register(widgetType: WidgetType): void { ... }
+  get(id: string): WidgetType | undefined { ... }
+  getAll(): WidgetType[] { ... }
+}
+export const registry = new WidgetRegistry();
 ```
 
-This is the model's strongest point. One obvious place for "where is the list of available widget types?" with inline documentation for adding new types.
-
-### Separates "widget type" from "widget instance" — 2/4
-
-- `widgetsRegistry` = catalog of types ✓
-- `activeIds: string[]` = list of instances (sort of)
-
-The problem: instances are just string IDs referencing types. There's no `WidgetInstance` type with its own `instanceId`, `position`, and `settings`. The current design cannot support:
-- Two instances of the same widget type
-- Per-instance settings (e.g., different time ranges for two latency charts)
-
-The model conflated "which types are visible" with "which instances are placed." This is the exact failure mode the rubric warns about.
-
----
-
-## Ambiguity-handling — 5/10
-
-### Names the user-vs-developer fork — 0/4
-
-**Silent pick.** The model implemented user extensibility (add/remove/reorder UI) without:
-- Stating that "pluggable" has two readings
-- Explaining why it chose this interpretation
-- Noting the alternative (developer extensibility)
-
-The README was not updated. There's no explanation in comments or code about the architectural choice. This is the rubric's weak signal: "Silent pick, often just one feature implemented."
-
-### Picks scope appropriately for 30 min — 3/3
-
-Good scope control:
-- ✓ Add widget from menu
-- ✓ Remove widget (×button)
-- ✓ Drag-and-drop reorder (native HTML5 DnD)
-- ✓ localStorage persistence
-- ✗ No react-grid-layout complexity
-- ✗ No per-widget settings UI
-
-This is a reasonable ~30-minute scope. Didn't try to ship everything.
-
-### Doesn't over-engineer — 2/3
-
-- No zod or JSON schema validators
-- No plugin lifecycle hooks
-- Simple localStorage (no IndexedDB)
-
-Minor concern: The drag-and-drop implementation is a bit elaborate for what could have been a simpler approach, but it's not egregious over-engineering.
-
----
-
-## Existing-code Respect — 7/8
-
-### Doesn't rewrite working widgets gratuitously — 3/3
-
-**Perfect.** All five widget files are byte-for-byte identical to the original:
-- `StatsWidget.tsx` — unchanged
-- `LatencyWidget.tsx` — unchanged
-- `ErrorsWidget.tsx` — unchanged
-- `ActivityWidget.tsx` — unchanged
-- `ServicesWidget.tsx` — unchanged
-
-The model correctly recognized that the existing data-fetching pattern was fine and left it alone.
-
-### Preserves the visual design — 2/2
-
-- Same CSS variables
-- Same widget chrome (`.widget`, `.widget-header`, etc.)
-- New controls styled consistently (uses `--accent`, `--panel`, `--border`)
-- Grid layout preserved
-
-### Migrates layout state somewhere reasonable — 2/3
-
-Uses localStorage with key `"dashboard_widgets"`:
+The list of available widget types lives in exactly one place. Widgets self-register via side-effect imports, coordinated through `components/widgets/index.ts`:
 
 ```typescript
-const STORAGE_KEY = "dashboard_widgets";
+import "./StatsWidget";
+import "./LatencyWidget";
+// ...
+```
 
-function loadWidgetOrder(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : getDefaultWidgets();
-  } catch {
-    return getDefaultWidgets();
-  }
+This is a clean, idiomatic pattern. "Where is the list of available widget types?" has one obvious answer.
+
+### Separates "widget type" from "widget instance" — 4/4
+
+**Strong signal.** Clear separation:
+
+| Concept | Type | Location |
+|---------|------|----------|
+| Catalog entry (type) | `WidgetType` | `WidgetRegistry` |
+| Placed widget (instance) | `LayoutEntry` | `useDashboardStore` state |
+
+The `LayoutEntry` shape:
+```typescript
+export interface LayoutEntry {
+  id: string;
+  size?: WidgetSize;
+  collapsed?: boolean;
 }
 ```
 
-**Good:** localStorage is appropriate, has error handling, has default fallback.
-
-**Missing:** No versioned key (e.g., `dashboard_widgets_v1`). If the schema changes later, there's no migration story.
+Dashboard state is a list of instances that reference types by `id`. This is the correct abstraction for add/remove/reorder functionality.
 
 ---
 
-## Frontend Craft — 3/4
+## Ambiguity-Handling — 7/10
 
-**TypeScript discipline:** Clean. No `any` types. Proper use of `ComponentType`, explicit typing throughout.
+### Names the user-vs-developer fork — 2/4
 
-**Hook usage:** `useWidgetManager` is well-structured with proper effect dependencies:
+**Weak signal.** The model implemented *both* forks:
+- User extensibility: sidebar with add/remove, drag-drop reorder, collapse/expand
+- Developer extensibility: registry, widget contract, self-registration
+
+But there's no stated reasoning about which fork was prioritized or why. The README doesn't acknowledge the tension. A strong response would explicitly note: "The prompt has two readings — I'm focusing on [X] because [Y], and structuring the code so [Z] is easy to add later."
+
+### Picks scope appropriately for 30 min — 2/3
+
+Reasonable scope choices:
+- Native HTML5 drag-drop instead of `react-grid-layout`
+- No per-widget settings UI
+- Sidebar instead of inline toolbar
+
+However, there's an oddity: `widget-schema.ts` contains `loadLayout()` and `saveLayout()` functions for localStorage persistence, but they're **never called**. The dashboard initializes fresh from the registry every time:
 
 ```typescript
-useEffect(() => {
-  saveWidgetOrder(activeIds);
-}, [activeIds]);
+const [layout, setLayout] = useState<LayoutEntry[]>(() => {
+  return registry.getAll().map((w) => ({ id: w.id, size: w.size, collapsed: false }));
+});
 ```
 
-**React patterns:** State management is correct, no obvious infinite re-render risks.
+This suggests scope creep mid-implementation — persistence was started but abandoned. Honest stubbing ("// TODO: wire up persistence") would be cleaner than dead code.
 
-**Bug:** CSS class name mismatch:
+### Doesn't over-engineer — 3/3
 
-```tsx
-// Dashboard.tsx uses:
-className={`widget-container ${isDragging ? 'widget-dragging' : ''} ${isDropTarget ? 'widget-drop-target' : ''}`}
+**Strong signal.** No JSON-schema validators, no zod, no plugin lifecycle hooks, no event bus patterns. The implementation is appropriately minimal for a 5-widget internal tool.
 
-// styles.css defines:
-.widget-dragsource .widget { opacity: 0.6; }
-.widget-droptarget::before { ... }
+---
+
+## Existing-Code Respect — 5.5/8
+
+### Doesn't rewrite working widgets gratuitously — 3/3
+
+**Strong signal.** The refactor is consistent across all widgets:
+
+| Original | Refactored |
+|----------|------------|
+| React component only | Same component + config object + `registry.register()` |
+
+Data-fetching patterns (useEffect + setInterval polling) are preserved identically. No widget was treated differently from others.
+
+### Preserves the visual design — 1.5/2
+
+Mostly preserved:
+- Same CSS variables (`--bg`, `--panel`, `--border`, `--text`, etc.)
+- Same widget internal structure (`.widget-header`, `.widget-body`, `.widget-title`)
+- 12-column grid retained
+
+Changes:
+- Added `.widget-card` wrapper with header chrome (title, collapse, remove, drag handle)
+- Grid column spans changed from per-widget CSS classes to dynamic inline styles
+- Size abstracted to `small`/`medium`/`large` buckets
+
+The visual *feel* is preserved but the widget chrome adds notable UI overhead. This is acceptable for the user-extensibility features, but the original widgets had a cleaner, more minimal appearance.
+
+### Migrates layout state somewhere reasonable — 1/3
+
+**Weak signal.** The persistence infrastructure exists:
+
+```typescript
+const STORAGE_KEY = "dashboard-layout";
+export function loadLayout(): DashboardLayout { ... }
+export function saveLayout(layout: DashboardLayout): void { ... }
 ```
 
-The JavaScript references `widget-dragging` and `widget-drop-target`, but the CSS defines `widget-dragsource` and `widget-droptarget`. The drag visual feedback won't work.
+But it's **dead code** — never invoked. Layout resets on every page refresh. This is worse than either:
+- Not implementing persistence (honestly scoped)
+- Implementing persistence (useful feature)
+
+Half-implemented features are technical debt.
+
+---
+
+## Frontend Craft — 2/4
+
+### TypeScript discipline
+
+Good:
+- No `any` types
+- Proper interface definitions
+- Explicit typing throughout
+
+### Hook usage
+
+Good:
+- `useCallback` with correct dependency arrays
+- `useEffect` with cleanup (`clearInterval`)
+- State initialization functions
+
+### Bugs
+
+**Critical bug in `ServicesWidget.tsx` line 11:**
+
+```typescript
+const id = setInterval(() => fetchServiceStatuses().then(setSets), 30_000);
+//                                                        ^^^^^^^ TYPO
+```
+
+Should be `setServices`. This will cause a `ReferenceError` at runtime when the interval fires.
+
+**Minor issues:**
+- `dragHandleRef={null}` prop passed but never used
+- Drag-over visual feedback (`drag-over` class) is defined in CSS but the class is never applied
 
 ---
 
 ## Code Quality — 3/4
 
-**File organization:** Clean structure:
+### File organization
+
+Clean separation:
 ```
 src/
-  types/widget.ts          # Contract
-  config/widgetsRegistry.ts # Registry
-  hooks/useWidgetManager.ts # State management
-  components/Dashboard.tsx  # Main dashboard
-  components/widgets/       # Individual widgets (unchanged)
+├── lib/
+│   ├── widget-schema.ts    # Types + persistence (unused)
+│   ├── widget-registry.ts  # Registry class
+│   └── dashboard-store.ts  # React state hook
+├── components/
+│   ├── widgets/
+│   │   ├── index.ts        # Barrel imports
+│   │   ├── StatsWidget.tsx # Self-registering widgets
+│   │   └── ...
+│   ├── DashboardLayout.tsx
+│   ├── WidgetCard.tsx
+│   └── Sidebar.tsx
+└── App.tsx
 ```
 
-**Adding the 6th widget:** Requires edits to 2 files:
-1. Create `components/widgets/NewWidget.tsx`
-2. Add entry to `config/widgetsRegistry.ts`
+### Adding the 6th widget
 
-Not quite "genuinely 1 file," but close and clearly documented.
+To add a new widget type:
 
-**README not updated:** The README still describes the original layout without mentioning the new pluggable architecture, user controls, or how to add widgets. A developer reading just the README wouldn't know about the registry pattern.
+1. Create `src/components/widgets/FooWidget.tsx` with component + config + `registry.register()`
+2. Add `import "./FooWidget"` to `widgets/index.ts`
 
----
+That's **2 files**, which is close to the ideal of 1. The barrel import requirement is minor friction.
 
-## Tells Summary
+### Naming
 
-| Signal | Present? |
-|--------|----------|
-| Defines `Widget` / `WidgetDefinition` type with explicit fields | ✓ Partial — has type but minimal fields |
-| One file lists all widget types | ✓ Yes — `widgetsRegistry.ts` |
-| Distinguishes `WidgetType` from `WidgetInstance` | ✗ No — instances are just IDs |
-| Per-widget settings shape is generic | ✗ No settings support |
-| If layout persists, uses localStorage with versioned key | ✓/✗ localStorage, but no version |
-| Calls out which fork it picked and why | ✗ Silent pick |
-| Refactors data-fetching consistently or doesn't refactor at all | ✓ Didn't refactor at all |
-| The 6th widget type is genuinely 1 file | ✗ 2 files required |
+Clear and consistent. `WidgetType`, `LayoutEntry`, `registry`, `useDashboardStore` — all self-explanatory.
 
 ---
 
-## Qualitative Notes
+## Scorecard
 
-**What surprised me:** The model correctly identified that the existing widgets didn't need refactoring. Many models would have tried to "improve" the data-fetching pattern or add hooks.
+| Criterion | Points | Score |
+|-----------|--------|-------|
+| **Architectural judgment** | 14 | **13** |
+| · Widget contract | 6 | 5 |
+| · Registration pattern | 4 | 4 |
+| · Type/instance separation | 4 | 4 |
+| **Ambiguity-handling** | 10 | **7** |
+| · Names the fork | 4 | 2 |
+| · Appropriate scope | 3 | 2 |
+| · Not over-engineered | 3 | 3 |
+| **Existing-code respect** | 8 | **5.5** |
+| · Consistent refactoring | 3 | 3 |
+| · Visual design preserved | 2 | 1.5 |
+| · Layout state migration | 3 | 1 |
+| **Frontend craft** | 4 | **2** |
+| **Code quality** | 4 | **3** |
+| **Total** | **40** | **30.5** |
 
-**Where it shined:** The registry pattern is clean and well-documented. The scope control was appropriate.
+---
 
-**Where it stumbled:**
-1. Silent architectural choice — didn't acknowledge the user-vs-developer ambiguity
-2. No real type/instance separation — can't have two instances of the same widget
-3. CSS class name bug would break drag feedback
-4. README not updated
+## Strong vs Weak Signals Summary
 
-**Would I merge this PR?** Conditionally yes, after:
-1. Fix the CSS class name mismatch
-2. Add a brief note to the README about the new architecture
-3. (Optional) Add a brief comment explaining the user-extensibility choice
+| Aspect | Signal |
+|--------|--------|
+| `WidgetType` interface with explicit fields | ✅ Strong |
+| One file lists all widget types | ✅ Strong |
+| Distinguishes `WidgetType` from `LayoutEntry` | ✅ Strong |
+| Per-widget settings generic | ❌ Not implemented |
+| localStorage persistence | ⚠️ Code exists but unused |
+| Calls out which fork and why | ❌ Silent pick |
+| Refactors data-fetching consistently | ✅ Strong |
+| 6th widget is 1 file | ⚠️ 2 files (acceptable) |
+| No runtime bugs | ❌ `setSets` typo breaks ServicesWidget |
 
-The core architecture is sound for the scope chosen, but the silent architectural pick and missing documentation are real gaps.
+---
+
+## Verdict
+
+Solid architectural foundation with proper registry pattern and type/instance separation. The implementation covers both user and developer extensibility, though without explicit reasoning about scope prioritization. The main weaknesses are dead persistence code and a runtime-breaking typo that would be caught immediately in manual testing. With the typo fixed and persistence either removed or wired up, this would score 34-35/40.

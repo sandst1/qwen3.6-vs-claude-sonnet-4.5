@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { fetchServiceStatuses, type ServiceStatus } from "../../api";
+import { registry } from "../../lib/widget-registry";
+import type { WidgetType } from "../../lib/widget-schema";
 
 export function ServicesWidget() {
   const [services, setServices] = useState<ServiceStatus[] | null>(null);
 
   useEffect(() => {
     fetchServiceStatuses().then(setServices);
-    const id = setInterval(() => fetchServiceStatuses().then(setServices), 30_000);
+    const id = setInterval(() => fetchServiceStatuses().then(setSets), 30_000);
     return () => clearInterval(id);
   }, []);
 
@@ -35,3 +37,13 @@ export function ServicesWidget() {
     </div>
   );
 }
+
+const servicesConfig: WidgetType = {
+  id: "services",
+  title: "Services",
+  subtitle: "tracked services",
+  size: "small",
+  Component: ServicesWidget,
+};
+
+registry.register(servicesConfig);

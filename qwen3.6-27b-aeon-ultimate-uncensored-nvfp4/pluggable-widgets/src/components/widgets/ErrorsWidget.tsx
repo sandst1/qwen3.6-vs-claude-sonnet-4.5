@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchErrorCount, type ErrorCount } from "../../api";
+import { registry } from "../../lib/widget-registry";
+import type { WidgetType } from "../../lib/widget-schema";
 
-// hardcoded — alert if last 5 min count is over this
 const ALERT_THRESHOLD = 10;
 
 export function ErrorsWidget() {
@@ -39,3 +40,13 @@ export function ErrorsWidget() {
     </div>
   );
 }
+
+const errorsConfig: WidgetType = {
+  id: "errors",
+  title: "Errors",
+  subtitle: "last 5 min",
+  size: "small",
+  Component: ErrorsWidget,
+};
+
+registry.register(errorsConfig);

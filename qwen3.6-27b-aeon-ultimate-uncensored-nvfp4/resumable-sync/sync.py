@@ -5,8 +5,11 @@ Pulls issues from a configured GitHub repo into a local SQLite DB so we can
 run analytics against them without hammering the API every time.
 
 Run with:
-    python sync.py
+    python sync.py              # auto-resumes from last progress
+    python sync.py --fresh      # start over from scratch
 """
+import argparse
+import json
 import logging
 import sqlite3
 import sys
@@ -71,12 +74,39 @@ def init_db(conn: sqlite3.Connection):
 
         CREATE TABLE IF NOT EXISTS sync_state (
             repo TEXT PRIMARY KEY,
-            next_page INTEGER NOT NULL DEFAULT 1,
-            complete INTEGER NOT NULL DEFAULT 0,
-            updated_at TEXT NOT NULL
+            last_completed_page INTEGER NOT NULL DEFAULT 0,
+            total_issues_synced INTEGER NOT NULL DEFAULT 0,
+            last_synced_at TEXT NOT NULL
         );
         """
     )
+    conn.commit()
+
+
+def get_sync_state(conn: sqlite3.Connection, repo: str):
+    row = conn.execute(
+        "SELECT last_completed_page, total_issues_synced FROM sync_state WHERE repo = ?",
+        (repo,),
+    ).fetchone()
+    if row:
+        return {"last_completed_page": row[0], "total_issues_synced": row[1]}
+    return {"last_completed_page": 0, "total_issues_synced": 0}
+
+
+def save_sync_state(conn: sqlite3.Connection, repo: str, page: int, total_issues: int):
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO sync_state (repo, last_completed_page, total_issues_synced, last_synced_at)
+        VALUES (?, ?, ?, ?)
+        """,
+        (repo, page, total_issues, now),
+    )
+    conn.commit()
+
+
+def clear_sync_state(conn: sqlite3.Connection):
+    conn.execute("DELETE FROM sync_state")
     conn.commit()
 
 
@@ -119,7 +149,6 @@ def upsert_issue(conn: sqlite3.Connection, repo: str, issue: dict):
     if "pull_request" in issue:
         return False
 
-    import json
     conn.execute(
         """
         INSERT INTO issues (
@@ -176,23 +205,51 @@ def upsert_comment(conn: sqlite3.Connection, issue_id: int, comment: dict):
     )
 
 
-def sync_issues(session: requests.Session, conn: sqlite3.Connection, repo: str, per_page: int):
-    """Fetch all issues for a repo and write them to the DB. Resumable — tracks progress per repo."""
-    start_page = 1
-    row = conn.execute(
-        "SELECT next_page, complete FROM sync_state WHERE repo = ?", (repo,)
-    ).fetchone()
-    if row and not row[1]:
-        start_page = row[0]
-    if start_page > 1:
-        existing = conn.execute(
-            "SELECT COUNT(*) FROM issues WHERE repo = ?", (repo,)
-        ).fetchone()[0]
-        logger.info("Resuming %s from page %d (%d issues already in DB)", repo, start_page, existing)
-    else:
-        logger.info("Syncing issues for %s", repo)
+def fetch_comments_for_issue(session: requests.Session, conn: sqlite3.Connection, issue: dict):
+    """Fetch all comments for a single issue."""
+    url = issue["comments_url"]
+    page = 1
+    while True:
+        resp = request_with_retry(session, url, {"per_page": 100, "page": page})
+        batch = resp.json()
+        if not batch:
+            break
+        for comment in batch:
+            upsert_comment(conn, issue["id"], comment)
+        if len(batch) < 100:
+            break
+        page += 1
 
+
+def sync_issues(
+    session: requests.Session,
+    conn: sqlite3.Connection,
+    repo: str,
+    per_page: int,
+    fresh: bool = False,
+):
+    """Fetch all issues for a repo and write them to the DB.
+
+    On resume, picks up from the last completed page stored in sync_state.
+    """
     url = f"https://api.github.com/repos/{repo}/issues"
+
+    # Resume from saved progress
+    start_page = 1
+    total_issues = 0
+    if not fresh:
+        state = get_sync_state(conn, repo)
+        if state["last_completed_page"] > 0:
+            start_page = state["last_completed_page"] + 1
+            total_issues = state["total_issues_synced"]
+            logger.info(
+                "Resuming %s from page %d (%d issues synced previously)",
+                repo,
+                start_page,
+                total_issues,
+            )
+
+    logger.info("Syncing issues for %s (starting at page %d)", repo, start_page)
     page = start_page
 
     while True:
@@ -218,57 +275,31 @@ def sync_issues(session: requests.Session, conn: sqlite3.Connection, repo: str, 
                     fetch_comments_for_issue(session, conn, issue)
 
         conn.commit()
-        _update_sync_state(conn, repo, page, len(batch))
-        logger.info("Page %d: %d issues committed", page, issue_count_in_page)
+        total_issues += issue_count_in_page
+        save_sync_state(conn, repo, page, total_issues)
+        logger.info(
+            "Page %d: %d issues (total so far: %d) [progress saved]",
+            page,
+            issue_count_in_page,
+            total_issues,
+        )
 
         if len(batch) < per_page:
-            _complete_sync_state(conn, repo)
-            _report_total(conn, repo)
             break
         page += 1
 
-
-def _update_sync_state(conn: sqlite3.Connection, repo: str, page: int, batch_size: int):
-    """Mark that we've committed up to this page (partial progress)."""
-    conn.execute(
-        "INSERT INTO sync_state (repo, next_page, complete, updated_at) VALUES (?, ?, 0, ?) "
-        "ON CONFLICT(repo) DO UPDATE SET next_page = excluded.next_page, updated_at = excluded.updated_at",
-        (repo, page + 1, datetime.now(timezone.utc).isoformat()),
-    )
-
-
-def _complete_sync_state(conn: sqlite3.Connection, repo: str):
-    """Mark the sync as complete (last batch was shorter than per_page)."""
-    conn.execute(
-        "UPDATE sync_state SET complete = 1, updated_at = ? WHERE repo = ?",
-        (datetime.now(timezone.utc).isoformat(), repo),
-    )
-
-
-def _report_total(conn: sqlite3.Connection, repo: str):
-    count = conn.execute(
-        "SELECT COUNT(*) FROM issues WHERE repo = ?", (repo,)
-    ).fetchone()[0]
-    logger.info("Done with %s: %d issues total", repo, count)
-
-
-def fetch_comments_for_issue(session: requests.Session, conn: sqlite3.Connection, issue: dict):
-    """Fetch all comments for a single issue."""
-    url = issue["comments_url"]
-    page = 1
-    while True:
-        resp = request_with_retry(session, url, {"per_page": 100, "page": page})
-        batch = resp.json()
-        if not batch:
-            break
-        for comment in batch:
-            upsert_comment(conn, issue["id"], comment)
-        if len(batch) < 100:
-            break
-        page += 1
+    logger.info("Done with %s: %d issues total", repo, total_issues)
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Sync GitHub issues to a local SQLite DB")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Start from scratch, ignoring saved progress",
+    )
+    args = parser.parse_args()
+
     config = load_config()
     setup_logging(config.get("log_level", "INFO"))
 
@@ -284,8 +315,12 @@ def main():
     init_db(conn)
 
     try:
+        if args.fresh:
+            clear_sync_state(conn)
+            logger.info("Starting fresh sync (previous progress cleared)")
+
         for repo in config["repos"]:
-            sync_issues(session, conn, repo, per_page=config.get("per_page", 100))
+            sync_issues(session, conn, repo, per_page=config.get("per_page", 100), fresh=args.fresh)
     finally:
         conn.close()
 
@@ -294,8 +329,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        logger.warning("Interrupted by user")
+        logger.warning("Interrupted — progress was saved. Run again to resume.")
         sys.exit(130)
     except Exception:
-        logger.exception("Sync failed")
+        logger.exception("Sync failed — progress was saved. Run again to resume.")
         sys.exit(1)

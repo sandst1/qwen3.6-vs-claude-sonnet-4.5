@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchActivity, type ActivityEvent } from "../../api";
+import { registry } from "../../lib/widget-registry";
+import type { WidgetType } from "../../lib/widget-schema";
 
 export function ActivityWidget() {
   const [events, setEvents] = useState<ActivityEvent[] | null>(null);
@@ -35,3 +37,13 @@ export function ActivityWidget() {
     </div>
   );
 }
+
+const activityConfig: WidgetType = {
+  id: "activity",
+  title: "Recent Activity",
+  subtitle: "all environments",
+  size: "medium",
+  Component: ActivityWidget,
+};
+
+registry.register(activityConfig);

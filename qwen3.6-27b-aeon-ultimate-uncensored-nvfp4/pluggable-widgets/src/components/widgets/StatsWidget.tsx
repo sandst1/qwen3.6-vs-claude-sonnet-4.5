@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchSummaryStats, type SummaryStats } from "../../api";
+import { registry } from "../../lib/widget-registry";
+import type { WidgetType } from "../../lib/widget-schema";
 
 export function StatsWidget() {
   const [data, setData] = useState<SummaryStats | null>(null);
@@ -10,6 +12,20 @@ export function StatsWidget() {
     return () => clearInterval(id);
   }, []);
 
+  if (!data) {
+    return (
+      <div className="widget widget--stats">
+        <div className="widget-header">
+          <span className="widget-title">Summary</span>
+          <span className="widget-subtitle">last 5 min</span>
+        </div>
+        <div className="widget-body">
+          <span className="loading">Loading…</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="widget widget--stats">
       <div className="widget-header">
@@ -17,42 +33,47 @@ export function StatsWidget() {
         <span className="widget-subtitle">last 5 min</span>
       </div>
       <div className="widget-body">
-        {data == null ? (
-          <span className="loading">Loading…</span>
-        ) : (
-          <div className="stat-grid">
-            <Stat label="req/min" value={data.requestsPerMin.toLocaleString()} delta={data.requestsDelta} />
-            <Stat label="p99 ms" value={String(data.p99LatencyMs)} delta={data.latencyDelta} invertColor />
-            <Stat label="users" value={data.activeUsers.toLocaleString()} delta={data.usersDelta} />
-            <Stat label="err %" value={data.errorRate.toFixed(2)} delta={data.errorRateDelta} invertColor />
+        <div className="stat-grid">
+          <div className="stat">
+            <span className="stat-label">req/min</span>
+            <span className="stat-value">{data.requestsPerMin.toLocaleString()}</span>
+            <span className={`stat-delta ${data.requestsDelta > 0 ? "up" : "down"}`}>
+              {data.requestsDelta > 0 ? "+" : ""}{data.requestsDelta}%
+            </span>
           </div>
-        )}
+          <div className="stat">
+            <span className="stat-label">p99 ms</span>
+            <span className="stat-value">{data.p99LatencyMs}</span>
+            <span className={`stat-delta ${data.latencyDelta > 0 ? "down" : "up"}`}>
+              {data.latencyDelta > 0 ? "+" : ""}{data.latencyDelta}%
+            </span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">users</span>
+            <span className="stat-value">{data.activeUsers.toLocaleString()}</span>
+            <span className={`stat-delta ${data.usersDelta > 0 ? "up" : "down"}`}>
+              {data.usersDelta > 0 ? "+" : ""}{data.usersDelta}%
+            </span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">err %</span>
+            <span className="stat-value">{data.errorRate.toFixed(2)}</span>
+            <span className={`stat-delta ${data.errorRateDelta > 0 ? "down" : "up"}`}>
+              {data.errorRateDelta > 0 ? "+" : ""}{data.errorRateDelta}%
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  delta,
-  invertColor = false,
-}: {
-  label: string;
-  value: string;
-  delta: number;
-  invertColor?: boolean;
-}) {
-  const positive = delta > 0;
-  const isGood = invertColor ? !positive : positive;
-  return (
-    <div className="stat">
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
-      <span className={`stat-delta ${isGood ? "up" : "down"}`}>
-        {positive ? "+" : ""}
-        {delta}%
-      </span>
-    </div>
-  );
-}
+const statsConfig: WidgetType = {
+  id: "stats",
+  title: "Summary",
+  subtitle: "last 5 min",
+  size: "medium",
+  Component: StatsWidget,
+};
+
+registry.register(statsConfig);
