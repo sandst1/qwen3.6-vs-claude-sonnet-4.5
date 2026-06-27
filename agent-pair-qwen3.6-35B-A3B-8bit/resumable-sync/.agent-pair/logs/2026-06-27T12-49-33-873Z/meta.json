@@ -1,0 +1,9 @@
+{
+  "mode": "pair",
+  "task": "We've been hitting cases where this sync gets interrupted halfway through — sometimes the host gets restarted, sometimes someone Ctrl-C's it, sometimes GitHub flakes out in a way our retry doesn't recover from. Right now when that happens, we have to start over from the beginning, which on the bigger repos is a real pain. Make it resumable.",
+  "coderModel": "asusgx10/Qwen/Qwen3.6-35B-A3B-FP8",
+  "observerModel": "asusgx10/Qwen/Qwen3.6-35B-A3B-FP8",
+  "observerCallCount": 10,
+  "feedbackInjectedCount": 10,
+  "completedAt": "2026-06-27T13:10:45.766Z"
+}

@@ -1,6 +1,6 @@
-# Benchmark: Eight-Model Comparison (Qwen + Sonnet + DeepSeek + Step)
+# Benchmark: Nine-Model Comparison (Qwen + Sonnet + DeepSeek + Step)
 
-A side-by-side comparison of eight AI model variants on non-trivial coding tasks designed to test **architectural judgment** and **ambiguity-handling** - not just raw correctness.
+A side-by-side comparison of nine AI model variants on non-trivial coding tasks designed to test **architectural judgment** and **ambiguity-handling** - not just raw correctness.
 
 This benchmark is intentionally built around **underspecified, real-world prompts** run against existing small codebases. The point is to measure how models resolve ambiguity, choose scope, and preserve working systems under realistic constraints - not whether they can produce a syntactically correct patch.
 
@@ -27,6 +27,7 @@ See [BENCHMARK.md](./BENCHMARK.md) for the full rubric and methodology.
 |-------|---------------|------------------|-----------|---|
 | **Qwen 3.6-27B-8bit (Local)** | 31 / 40 | 35.5 / 40 | **66.5** | 83.1% |
 | **Claude Sonnet 4.5** | 33 / 40 | 32 / 40 | **65** | 81.25% |
+| **Qwen 3.6-35B-A3B-8bit (Local, agent-pair)** | 29 / 40 | 35 / 40 | **64** | 80% |
 | **[DeepSeek-V4-Flash-REAP-180B](https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B)** | 30 / 40 | 32 / 40 | **62** | 77.50% |
 | **Qwen 3.6-27B-4bit** | 26 / 40 | 33 / 40 | **59** | 73.75% |
 | **Qwen 3.6-35B-A3B-4bit** | 31 / 40 | 28 / 40 | **59** | 73.75% |
@@ -36,8 +37,11 @@ See [BENCHMARK.md](./BENCHMARK.md) for the full rubric and methodology.
 
 **Winner: Qwen 3.6-27B-8bit (Local, unsloth)** at 66.5/80.  
 Runner-up: **Claude Sonnet 4.5** at 65/80.  
-Third: **[DeepSeek-V4-Flash-REAP-180B](https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B)** at 62/80 — a REAP-pruned 180B MoE running on a single DGX Spark.  
+Third: **Qwen 3.6-35B-A3B-8bit (Local, agent-pair)** at 64/80 — the same 35B-A3B architecture in FP8 quantization, run with agent-pair observer feedback.  
+Fourth: **[DeepSeek-V4-Flash-REAP-180B](https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B)** at 62/80 — a REAP-pruned 180B MoE running on a single DGX Spark.  
 Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bit** at 59/80.
+
+> **Note on Qwen 3.6-35B-A3B-8bit (agent-pair):** This is the same Qwen 3.6-35B-A3B model in FP8 (8-bit) quantization, run locally with **agent-pair** mode — a pair-programming setup where an observer model reviews the coder's work in real-time and provides feedback. Both coder and observer are the same model (`Qwen3.6-35B-A3B-FP8`). The 8-bit quantization + observer feedback boosts the total from 59/80 (4-bit solo) to 64/80, primarily through a dramatically improved widget score (35 vs 28). The sync score drops slightly (29 vs 31) due to dead code and a commit ordering issue the observer flagged but was not fully addressed.
 
 > **Note on the OpenRouter entry:** the run in `qwen3.6-27B-4bit-openrouter/` was originally mislabeled as "8-bit"; it is believed to be a 4-bit quantized model served via OpenRouter, based on scoring patterns and output style. The locally run unsloth 8-bit results are now tracked separately in `qwen3.6-27B-8bit/`.
 
@@ -53,29 +57,30 @@ Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bi
 
 ### Score Breakdown
 
-| Criterion | Max | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
-|-----------|-----|------------------|---------------|----------|--------------|------------|------------|-----------------|----------------|
-| Architectural judgment | 12 | 10 | 8 | 8 | 10 | 9 | 11 | 10 | 7 |
-| Ambiguity-handling | 10 | 7 | 6 | 5 | 7 | 5 | 7 | 7 | 2 |
-| Existing-code respect | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 6 |
-| Debugging / failure-mode | 6 | 3 | 2 | 3 | 3 | 3 | 4 | 3 | 3 |
-| Code quality | 4 | 3 | 2 | 2 | 3 | 2 | 3 | 2 | 1 |
-| **Total** | **40** | **31** | **26** | **26** | **31** | **27** | **33** | **30** | **19** |
+| Criterion | Max | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
+|-----------|-----|------------------|---------------|----------|--------------|---------------------|------------|------------|-----------------|----------------|
+| Architectural judgment | 12 | 10 | 8 | 8 | 10 | 10 | 9 | 11 | 10 | 7 |
+| Ambiguity-handling | 10 | 7 | 6 | 5 | 7 | 7 | 5 | 7 | 7 | 2 |
+| Existing-code respect | 8 | 8 | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 6 |
+| Debugging / failure-mode | 6 | 3 | 2 | 3 | 3 | 3 | 3 | 4 | 3 | 3 |
+| Code quality | 4 | 3 | 2 | 2 | 3 | 2 | 2 | 3 | 2 | 1 |
+| **Total** | **40** | **31** | **26** | **26** | **31** | **29** | **27** | **33** | **30** | **19** |
 
 ### Architectural Approaches
 
-| Aspect | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
-|--------|------------------|---------------|----------|--------------|------------|------------|-----------------|----------------|
-| **State tables** | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_state` | 2 tables: `sync_state` + `pending_comments` | 1 table: `sync_checkpoints` | 1 table: `sync_state` |
-| **Checkpoint granularity** | Per-page | Per-issue | Per-issue | Per-page | Per-page | Per-page (+ deferred comments checkpointing) | Per-page | `since`-based (timestamp) |
-| **Comments handling** | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Deferred to separate pass with per-issue checkpoint | Inline fetch, no inner checkpoint (error-caught) | Inline fetch, try/except per issue |
-| **Checkpoint/data transaction coupling** | Weak (separate commits) | Weak | Stronger (same commit path) | Weak (separate commits) | Weak (separate commits) | Medium (implicit/partially coupled) | Weak (separate commits) | Weak (state lags one issue) |
-| **CLI reset flag** | `--reset` | None | None | None | `--fresh` | `--reset` | None | None |
-| **README update** | Yes | No | No | Yes | No | Yes | No | No |
+| Aspect | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
+|--------|------------------|---------------|----------|--------------|---------------------|------------|------------|-----------------|----------------|
+| **State tables** | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_state` | 1 table: `sync_state` | 2 tables: `sync_state` + `pending_comments` | 1 table: `sync_checkpoints` | 1 table: `sync_state` |
+| **Checkpoint granularity** | Per-page | Per-issue | Per-issue | Per-page | Per-page | Per-page | Per-page (+ deferred comments checkpointing) | Per-page | `since`-based (timestamp) |
+| **Comments handling** | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, dead `start_page` param (always 1) | Inline fetch, no inner checkpoint | Deferred to separate pass with per-issue checkpoint | Inline fetch, no inner checkpoint (error-caught) | Inline fetch, try/except per issue |
+| **Checkpoint/data transaction coupling** | Weak (separate commits) | Weak | Stronger (same commit path) | Weak (separate commits) | Weak (separate commits) | Weak (separate commits) | Medium (implicit/partially coupled) | Weak (separate commits) | Weak (state lags one issue) |
+| **CLI reset flag** | `--reset` | None | None | None | None | `--fresh` | `--reset` | None | None |
+| **README update** | Yes | No | No | Yes | No | No | Yes | No | No |
 
 **Key differences**:
 - Sonnet remains the only model that explicitly addresses nested-loop resumability in architecture.
 - Local 8-bit and 35B-A3B-4bit both choose per-page granularity and both score 31/40 on this task.
+- **35B-A3B-8bit (agent-pair)** also picks per-page granularity (29/40) — correct architecture but loses points on dead code (`total_pages` miscalculation, unused `start_page` parameter in `sync_comment_pages`) and no documentation. The observer feedback identified issues, but not all were addressed in the final version.
 - DeepSeek-V4-REAP-180B also picks per-page granularity (scoring 30/40), matching the right answer but losing points on documentation and transaction coupling.
 - **AEON-NVFP4** picks per-page granularity (correct) and scores 27/40 — solid existing-code respect (8/8) but loses points on documentation (README unchanged) and silent ambiguity-handling.
 - Both OpenRouter 27B variants converge on per-issue checkpointing, which is workable but heavier than needed.
@@ -84,14 +89,14 @@ Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bi
 
 ### Strong/Weak Signals
 
-| Signal | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet | DS-V4-REAP-180B | Step-3.7-Flash |
-|--------|-----------------|---------------|----------|----------------|------------|--------|-----------------|----------------|
-| State stored in `issues.db` (not JSON) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Per-repo cursors | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| State in same transaction as page commits | ❌ | ❌ | ✅ | ❌ | ❌ | ⚠️ | ❌ | ❌ |
-| Notes per-page-vs-per-record tradeoff | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Updates README | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Uses `since` (conflates with resumability) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ ⚠️ conflated |
+| Signal | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet | DS-V4-REAP-180B | Step-3.7-Flash |
+|--------|-----------------|---------------|----------|----------------|---------------------|------------|--------|-----------------|----------------|
+| State stored in `issues.db` (not JSON) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Per-repo cursors | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| State in same transaction as page commits | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ⚠️ | ❌ | ❌ |
+| Notes per-page-vs-per-record tradeoff | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Updates README | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Uses `since` (conflates with resumability) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ ⚠️ conflated |
 
 ---
 
@@ -99,29 +104,30 @@ Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bi
 
 ### Score Breakdown
 
-| Criterion | Max | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
-|-----------|-----|------------------|---------------|----------|--------------|------------|------------|-----------------|----------------|
-| Architectural judgment | 14 | 13 | 11 | 11 | 10 | 13 | 13 | 10 | 9 |
-| Ambiguity-handling | 10 | 8.5 | 5 | 8 | 5 | 7 | 6 | 8 | 6 |
-| Existing-code respect | 8 | 7 | 7 | 7 | 8 | 5.5 | 7 | 7 | 7 |
-| Frontend craft | 4 | 4 | 2 | 3 | 3 | 2 | 3 | 3 | 3 |
-| Code quality | 4 | 3 | 3 | 4 | 2 | 3 | 3 | 4 | 2 |
-| **Total** | **40** | **35.5** | **28** | **33** | **28** | **30.5** | **32** | **32** | **27** |
+| Criterion | Max | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
+|-----------|-----|------------------|---------------|----------|--------------|---------------------|------------|------------|-----------------|----------------|
+| Architectural judgment | 14 | 13 | 11 | 11 | 10 | 13 | 13 | 13 | 10 | 9 |
+| Ambiguity-handling | 10 | 8.5 | 5 | 8 | 5 | 7 | 7 | 6 | 8 | 6 |
+| Existing-code respect | 8 | 7 | 7 | 7 | 8 | 8 | 5.5 | 7 | 7 | 7 |
+| Frontend craft | 4 | 4 | 2 | 3 | 3 | 3.5 | 2 | 3 | 3 | 3 |
+| Code quality | 4 | 3 | 3 | 4 | 2 | 3.5 | 3 | 3 | 4 | 2 |
+| **Total** | **40** | **35.5** | **28** | **33** | **28** | **35** | **30.5** | **32** | **32** | **27** |
 
 ### Architectural Approaches
 
-| Aspect | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
-|--------|------------------|---------------|----------|--------------|------------|------------|-----------------|----------------|
-| **Widget contract** | `WidgetType` interface (no generic settings) | `WidgetDescriptor<TData>` generic | `WidgetDescriptor<T>` generic | `WidgetDef` (minimal, non-generic settings) | `WidgetType` interface (no generic settings) | `WidgetDefinition` (no generic) | `WidgetDefinition` (no generic settings) | `WidgetDefinition` (no generic, unused `pollInterval`) |
-| **Registration pattern** | Map registry + `registerWidget()` + side-effect imports | Class + side-effect imports | Map registry + `registerWidget()` + side-effect imports | `WidgetRegistry` + `BUILTIN_WIDGETS` catalog | Class `WidgetRegistry` + side-effect imports | Plain object registry | Map registry + `defineWidget()` | Class `WidgetRegistry` + side-effect imports |
-| **Type/instance split** | ✅ Perfect | ✅ | ⚠️ Partial (type IDs used as instances) | ❌ Conflated | ✅ Perfect (`WidgetType` vs `LayoutEntry`) | ✅ | ⚠️ Partial (`activeIds` is `string[]` of type IDs) | ⚠️ Partial (no duplicate widgets allowed) |
-| **Layout persistence** | localStorage | In-memory only | localStorage (`dashboard-config`) | localStorage (`dashboard-layout`) | Dead code (exists but never wired up) | localStorage | localStorage (`dashboard-layout`) | localStorage (`dashboard-config`) |
-| **Widget refactoring strategy** | Minimal (body content only, all 5 consistent) | Rewrote all 5 widgets | Rewrote all 5 widgets consistently | Kept existing widgets mostly unchanged | Consistent (component + config + register, all 5) | Left widgets byte-for-byte identical | Consolidated all 5 into `widgets.tsx` | Appended `widgetDefinition` export to each (minimal) |
-| **Adding 6th widget** | 2 files | 2-3 files | 1-2 files | 1 file | 2 files | 2 files | 1 file (`defineWidget()` call) | 2 files (widget + registry import) |
-| **Documentation** | None | None | Minimal (mostly code-level) | Minimal | None | `WIDGET_GUIDE.md` + `EXAMPLE_NEW_WIDGET.md` | Good README with architecture + guide | None (README unchanged) |
+| Aspect | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
+|--------|------------------|---------------|----------|--------------|---------------------|------------|------------|-----------------|----------------|
+| **Widget contract** | `WidgetType` interface (no generic settings) | `WidgetDescriptor<TData>` generic | `WidgetDescriptor<T>` generic | `WidgetDef` (minimal, non-generic settings) | `WidgetPlugin<TData>` generic | `WidgetType` interface (no generic settings) | `WidgetDefinition` (no generic) | `WidgetDefinition` (no generic settings) | `WidgetDefinition` (no generic, unused `pollInterval`) |
+| **Registration pattern** | Map registry + `registerWidget()` + side-effect imports | Class + side-effect imports | Map registry + `registerWidget()` + side-effect imports | `WidgetRegistry` + `BUILTIN_WIDGETS` catalog | Map registry + `registerWidget()` + side-effect imports | Class `WidgetRegistry` + side-effect imports | Plain object registry | Map registry + `defineWidget()` | Class `WidgetRegistry` + side-effect imports |
+| **Type/instance split** | ✅ Perfect | ✅ | ⚠️ Partial (type IDs used as instances) | ❌ Conflated | ✅ Perfect (`WidgetPlugin` vs `WidgetEntry`) | ✅ Perfect (`WidgetType` vs `LayoutEntry`) | ✅ | ⚠️ Partial (`activeIds` is `string[]` of type IDs) | ⚠️ Partial (no duplicate widgets allowed) |
+| **Layout persistence** | localStorage | In-memory only | localStorage (`dashboard-config`) | localStorage (`dashboard-layout`) | localStorage (`widget-layout-v1`) | Dead code (exists but never wired up) | localStorage | localStorage (`dashboard-layout`) | localStorage (`dashboard-config`) |
+| **Widget refactoring strategy** | Minimal (body content only, all 5 consistent) | Rewrote all 5 widgets | Rewrote all 5 widgets consistently | Kept existing widgets mostly unchanged | Consistent (pure render + registration, all 5) | Consistent (component + config + register, all 5) | Left widgets byte-for-byte identical | Consolidated all 5 into `widgets.tsx` | Appended `widgetDefinition` export to each (minimal) |
+| **Adding 6th widget** | 2 files | 2-3 files | 1-2 files | 1 file | 2 files | 2 files | 2 files | 1 file (`defineWidget()` call) | 2 files (widget + registry import) |
+| **Documentation** | None | None | Minimal (mostly code-level) | Minimal | None | None | `WIDGET_GUIDE.md` + `EXAMPLE_NEW_WIDGET.md` | Good README with architecture + guide | None (README unchanged) |
 
 **Key differences**:
-- **Qwen 3.6-27B-8bit (Local)** is the strongest on widgets overall: perfect type/instance separation, zero frontend bugs, full marks on frontend craft, and strong ambiguity-handling.
+- **Qwen 3.6-27B-8bit (Local)** is the strongest on widgets overall (35.5/40): perfect type/instance separation, zero frontend bugs, full marks on frontend craft, and strong ambiguity-handling.
+- **Qwen 3.6-35B-A3B-8bit (agent-pair)** is the runner-up on widgets (35/40) — near-identical architecture to the 27B-8bit with a generic `WidgetPlugin<TData>` contract, perfect type/instance split, and versioned localStorage key (`widget-layout-v1`). A massive improvement over its 4-bit solo run (28/40), suggesting observer feedback significantly improved architectural quality. Full marks on existing-code respect (8/8).
 - **Qwen 3.6-27B-4bit** is the strongest cloud Qwen on widgets (33/40), with better ambiguity-handling and cleaner extensibility mechanics.
 - **DeepSeek-V4-REAP-180B** ties with Sonnet on widgets (32/40), with the best code quality score (4/4) and strong ambiguity-handling (8/10), but partially conflates type/instance like some Qwen variants.
 - **AEON-NVFP4** scores 30.5/40 on widgets — strong architectural judgment (13/14, matching the 8-bit) with perfect type/instance separation, but loses points on dead persistence code and a runtime-breaking typo (`setSets` instead of `setServices`).
@@ -131,15 +137,15 @@ Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bi
 
 ### Frontend Issues Found
 
-| Issue | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet | DS-V4-REAP-180B | Step-3.7-Flash |
-|-------|-----------------|---------------|----------|----------------|------------|--------|-----------------|----------------|
-| Conditional hook call (Rules of Hooks violation) | — | ❌ Bug | — | — | — | — | — | — |
-| Incorrect drag event (`onDrag` vs `onDrop`) | — | ❌ Bug | — | — | — | — | — | — |
-| Runtime-breaking typo (`setSets` vs `setServices`) | — | — | — | — | ❌ Bug | — | — | — |
-| Type-vs-instance conflation risk | — | — | ⚠️ Partial | ❌ Clear gap | — | — | ⚠️ Partial (no duplicate widgets) | ⚠️ Partial (no duplicates) |
-| Dead persistence code (exists but unused) | — | — | — | — | ⚠️ Tech debt | — | — | — |
-| Dead code (`\|\| true`, `&& false`) | — | — | — | — | — | ⚠️ Sloppy | — | — |
-| Unused contract fields (`pollInterval` dead weight) | — | — | — | — | — | — | — | ⚠️ Minor |
+| Issue | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet | DS-V4-REAP-180B | Step-3.7-Flash |
+|-------|-----------------|---------------|----------|----------------|---------------------|------------|--------|-----------------|----------------|
+| Conditional hook call (Rules of Hooks violation) | — | ❌ Bug | — | — | — | — | — | — | — |
+| Incorrect drag event (`onDrag` vs `onDrop`) | — | ❌ Bug | — | — | — | — | — | — | — |
+| Runtime-breaking typo (`setSets` vs `setServices`) | — | — | — | — | — | ❌ Bug | — | — | — |
+| Type-vs-instance conflation risk | — | — | ⚠️ Partial | ❌ Clear gap | — | — | — | ⚠️ Partial (no duplicate widgets) | ⚠️ Partial (no duplicates) |
+| Dead persistence code (exists but unused) | — | — | — | — | — | ⚠️ Tech debt | — | — | — |
+| Dead code (`\|\| true`, `&& false`) | — | — | — | — | — | — | ⚠️ Sloppy | — | — |
+| Unused contract fields (`pollInterval` dead weight) | — | — | — | — | — | — | — | — | ⚠️ Minor |
 
 ---
 
@@ -167,12 +173,19 @@ Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bi
 4. **Existing-code style match**: The sync implementation reads like it was written by the original author — matching logging idioms, naming, and function patterns precisely.
 5. **Defensive error handling**: Added try/except around individual issue and comment processing in the sync task — a pragmatic robustness improvement not strictly asked for.
 
+### Where 35B-A3B-8bit (Agent-Pair) Was Competitive
+
+1. **Second-best widget score (35/40)**: Only 0.5 points behind 27B-8bit, with the same perfect type/instance separation and generic `WidgetPlugin<TData>` contract.
+2. **Agent-pair uplift**: The observer feedback pushed the widget score from 28 (4-bit solo) to 35 — a +7 point improvement on the same architecture, demonstrating that iterative review catches structural gaps that a solo run misses.
+3. **Full marks on existing-code respect (8/8 widgets)**: Consistent refactoring of all 5 widgets into pure render functions with registration calls, matching the design language.
+4. **Versioned localStorage key**: The `widget-layout-v1` key suggests awareness of future migration needs — a small but telling detail.
+
 ### Where Each Other Variant Stood Out
 
 1. **Qwen 3.6-27B-4bit (OpenRouter)**: Weaker overall, but used a generic widget descriptor (`WidgetDescriptor<TData>`).
 2. **Qwen 3.6-27B-4bit**: Strongest cloud Qwen on widgets (33/40), with cleaner extensibility and good ambiguity-handling.
 3. **Qwen 3.6-35B-A3B-4bit**: Strongest cloud Qwen on sync (31/40), choosing per-page checkpointing and keeping changes surgical.
-4. **Qwen 3.6-27B-AEON-NVFP4**: Highest widget architecture score (13/14, tied with 8-bit) among community fine-tunes; perfect type/instance separation. Dragged down by dead persistence code, a runtime typo, and lack of documentation.
+4. **Qwen 3.6-27B-AEON-NVFP4**: Highest widget architecture score (13/14, tied with 8-bit and 35B-A3B-8bit pair) among community fine-tunes; perfect type/instance separation. Dragged down by dead persistence code, a runtime typo, and lack of documentation.
 5. **Shared Qwen strengths**: All variants keep state in SQLite and preserve existing code paths well.
 
 ### Where Step-3.7-Flash Fell Short
@@ -189,20 +202,21 @@ Best cloud Qwen variants (tie): **Qwen 3.6-27B-4bit** and **Qwen 3.6-35B-A3B-4bi
 - **Transactional reasoning is often implicit**: explicit partial-failure discussion is limited in most runs.
 - **Widget settings contracts remain shallow**: none delivered a full per-instance settings abstraction end-to-end.
 - **Step-3.7-Flash underperformance suggests total parameter count ≠ coding skill**: with 198B total but only ~11B active per token, it scored below all 27B dense models (including the AEON fine-tune at NVFP4), reinforcing that active compute matters more than parameter catalog size for architectural reasoning.
+- **Agent-pair mode improves execution quality**: The 35B-A3B-8bit agent-pair run (64/80) outperforms the same model's 4-bit solo run (59/80) by +5 points — observer feedback catches structural issues that a solo coding pass misses, particularly on type/instance modeling and widget architecture.
 
 ---
 
 ## Qualitative Summary
 
-| Dimension | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
-|-----------|------------------|---------------|----------|--------------|------------|------------|-----------------|----------------|
-| Engineering execution | Strong on both | Solid baseline | Strong on widgets | Strong on sync | Solid architecture, sloppy edges | Most balanced | Solid on both | Weak on sync, decent on widgets |
-| Architectural ambition | Higher/clean | Higher/invasive | Higher/invasive but cleaner | Moderate/conservative | Higher/clean but unfinished | Conservative/comprehensive | Moderate/clean | Moderate/shallow |
-| Reasoning transparency | Mostly silent | Silent | Mostly silent | Mostly silent | Silent | Slightly better | Mostly silent | Silent |
-| Edge-case handling | Missed comments subloop; no UI bugs | Missed nested loop + UI bugs | Better frontend discipline | Better sync failure boundaries | Missed comments subloop; runtime typo | Best nested-loop handling | Missed comments subloop; good defensive error handling | Conflated sync concerns; broke sort order |
-| Documentation | Updated sync README | Skipped | Minimal | Updated sync README | Skipped | Strongest overall | No sync README; excellent widget README | Skipped |
-| Bug/sloppiness profile | None | 2 frontend bugs | Minor hook/pattern risks | Instance-model gaps | Runtime typo; dead persistence code | Minor dead-code sloppiness | Type/instance partial conflation | Sort-order regression; unused contract fields |
-| **Would merge PR?** | Yes | Maybe (fixes needed) | Yes, with minor notes | Yes, with minor notes | Yes, with fixes needed | Yes | Yes, with minor notes | Sync: No; Widgets: Yes (with fixes) |
+| Dimension | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | Step-3.7-Flash |
+|-----------|------------------|---------------|----------|--------------|---------------------|------------|------------|-----------------|----------------|
+| Engineering execution | Strong on both | Solid baseline | Strong on widgets | Strong on sync | Strong on widgets, solid on sync | Solid architecture, sloppy edges | Most balanced | Solid on both | Weak on sync, decent on widgets |
+| Architectural ambition | Higher/clean | Higher/invasive | Higher/invasive but cleaner | Moderate/conservative | Higher/clean | Higher/clean but unfinished | Conservative/comprehensive | Moderate/clean | Moderate/shallow |
+| Reasoning transparency | Mostly silent | Silent | Mostly silent | Mostly silent | Mostly silent | Silent | Slightly better | Mostly silent | Silent |
+| Edge-case handling | Missed comments subloop; no UI bugs | Missed nested loop + UI bugs | Better frontend discipline | Better sync failure boundaries | Missed comments subloop; dead start_page param; no UI bugs | Missed comments subloop; runtime typo | Best nested-loop handling | Missed comments subloop; good defensive error handling | Conflated sync concerns; broke sort order |
+| Documentation | Updated sync README | Skipped | Minimal | Updated sync README | Skipped | Skipped | Strongest overall | No sync README; excellent widget README | Skipped |
+| Bug/sloppiness profile | None | 2 frontend bugs | Minor hook/pattern risks | Instance-model gaps | Dead code paths (total_pages, start_page) | Runtime typo; dead persistence code | Minor dead-code sloppiness | Type/instance partial conflation | Sort-order regression; unused contract fields |
+| **Would merge PR?** | Yes | Maybe (fixes needed) | Yes, with minor notes | Yes, with minor notes | Sync: Yes (with fixes); Widgets: Yes | Yes, with fixes needed | Yes | Yes, with minor notes | Sync: No; Widgets: Yes (with fixes) |
 
 ---
 
@@ -229,6 +243,11 @@ A-vs-B/
 │   ├── review-resumable-sync.md
 │   └── review-pluggable-widgets.md
 ├── qwen3.6-35B-A3B-4bit/         # Qwen 35B-A3B 4-bit implementations
+│   ├── review-resumable-sync.md
+│   └── review-pluggable-widgets.md
+├── agent-pair-qwen3.6-35B-A3B-8bit/  # Qwen 35B-A3B FP8 (agent-pair mode)
+│   ├── resumable-sync/
+│   ├── pluggable-widgets/
 │   ├── review-resumable-sync.md
 │   └── review-pluggable-widgets.md
 ├── claude-sonnet-4.5/            # Sonnet's implementations
@@ -262,16 +281,18 @@ A-vs-B/
 Ranking:
 1. **Qwen 3.6-27B-8bit (Local)** - 66.5/80
 2. **Claude Sonnet 4.5** - 65/80
-3. **[DeepSeek-V4-Flash-REAP-180B](https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B)** - 62/80
-4. **Qwen 3.6-27B-4bit** - 59/80 (tie)
-4. **Qwen 3.6-35B-A3B-4bit** - 59/80 (tie)
-6. **Qwen 3.6-27B-AEON-NVFP4** - 57.5/80
-7. **Qwen 3.6-27B-4bit (OpenRouter)** - 54/80
-8. **[Step-3.7-Flash IQ4_XS](https://huggingface.co/stepfun-ai/Step-3.7-Flash-GGUF)** - 46/80
+3. **Qwen 3.6-35B-A3B-8bit (Local, agent-pair)** - 64/80
+4. **[DeepSeek-V4-Flash-REAP-180B](https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B)** - 62/80
+5. **Qwen 3.6-27B-4bit** - 59/80 (tie)
+5. **Qwen 3.6-35B-A3B-4bit** - 59/80 (tie)
+7. **Qwen 3.6-27B-AEON-NVFP4** - 57.5/80
+8. **Qwen 3.6-27B-4bit (OpenRouter)** - 54/80
+9. **[Step-3.7-Flash IQ4_XS](https://huggingface.co/stepfun-ai/Step-3.7-Flash-GGUF)** - 46/80
 
 Most important patterns:
 - The locally run unsloth 8-bit model outperforms all cloud/API variants — including Claude Sonnet 4.5 — driven by a near-perfect widget score (35.5/40) and solid sync performance (31/40).
-- **DeepSeek-V4-Flash-REAP-180B** places third despite being a REAP-pruned 180B MoE model running on a single DGX Spark. It ties Sonnet on widgets (32/40) with the best code quality score there, and nearly matches the per-page checkpoint leaders on sync (30/40). Its main gaps are documentation on the sync side and type/instance modeling on widgets.
+- **Qwen 3.6-35B-A3B-8bit (agent-pair)** places third (64/80), up from 59/80 for the same architecture at 4-bit without observer feedback. The improvement is almost entirely on widgets (+7 points), where observer feedback helped achieve perfect type/instance separation and a generic `WidgetPlugin<TData>` contract. The sync score dropped slightly (29 vs 31) due to dead code the observer flagged but was not fully cleaned up.
+- **DeepSeek-V4-Flash-REAP-180B** places fourth despite being a REAP-pruned 180B MoE model running on a single DGX Spark. It ties Sonnet on widgets (32/40) with the best code quality score there, and nearly matches the per-page checkpoint leaders on sync (30/40). Its main gaps are documentation on the sync side and type/instance modeling on widgets.
 - The two cloud 4-bit Qwen variants tie on total score, but for different reasons:
   - **27B-4bit** wins on widgets (higher ambiguity-handling + cleaner extensibility flow).
   - **35B-A3B-4bit** wins on sync (better checkpoint granularity and safer architecture).
@@ -279,4 +300,4 @@ Most important patterns:
 - **Step-3.7-Flash IQ4_XS** scores last (46/80) despite being the largest model by total parameters (198B). Its ~11B active parameter count per token appears insufficient for the architectural reasoning these tasks demand. The sync task is particularly weak (19/40) — it's the only model that conflated crash-recovery resumability with incremental sync via GitHub's `since` parameter, and it broke the existing sort-order invariant. The widget task (27/40) is more respectable, with a clean registry pattern, but the contract is shallow and undocumented.
 - The previously reported "Qwen 3.6-27B-8bit" entry was likely a 4-bit OpenRouter quantization; see the `qwen3.6-27B-4bit-openrouter/` directory.
 
-Across all eight models, explicit ambiguity-resolution remains the hardest benchmark bar; most implementations still pick a path and code it without clearly naming tradeoffs.
+Across all nine models, explicit ambiguity-resolution remains the hardest benchmark bar; most implementations still pick a path and code it without clearly naming tradeoffs.
