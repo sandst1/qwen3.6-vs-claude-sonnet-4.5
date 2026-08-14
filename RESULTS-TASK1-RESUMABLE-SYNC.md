@@ -8,14 +8,14 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 ## Score Breakdown
 
-| Criterion | Max | 3.8-27B-FP8 | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 |
-|-----------|-----|-------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|-----------------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|
-| Architectural judgment | 12 | 11 | 11 | 10 | 8 | 8 | 10 | 10 | 10 | 10 | 9 | 11 | 10 | 10 | 7 | 7 | 6 | 5 | 9 | 7 | 8 |
-| Ambiguity-handling | 10 | 8 | 8 | 7 | 6 | 5 | 7 | 7 | 7 | 7 | 5 | 7 | 7 | 7 | 5 | 2 | 5 | 4 | 7 | 6 | 6 |
-| Existing-code respect | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 8 | 6 | 6 | 7.5 | 4 | 8 | 8 | 8 |
-| Debugging / failure-mode | 6 | 5 | 4 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 4 | 2 | 3 | 3.5 | 2.5 | 4 | 3 | 4 |
-| Code quality | 4 | 4 | 4 | 3 | 2 | 2 | 3 | 2 | 3 | 2 | 2 | 3 | 2 | 3 | 1 | 1 | 2 | 2 | 3 | 1 | 2 |
-| **Total** | **40** | **36** | **35** | **31** | **26** | **26** | **31** | **29** | **31** | **30** | **27** | **33** | **30** | **32** | **21** | **19** | **24** | **17.5** | **31** | **25** | **28** |
+| Criterion | Max | 3.8-27B-FP8 | 3.8-27B-4bit | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 |
+|-----------|-----|-------------|--------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|-----------------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|
+| Architectural judgment | 12 | 11 | 10 | 11 | 10 | 8 | 8 | 10 | 10 | 10 | 10 | 9 | 11 | 10 | 10 | 7 | 7 | 6 | 5 | 9 | 7 | 8 |
+| Ambiguity-handling | 10 | 8 | 3 | 8 | 7 | 6 | 5 | 7 | 7 | 7 | 7 | 5 | 7 | 7 | 7 | 5 | 2 | 5 | 4 | 7 | 6 | 6 |
+| Existing-code respect | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 8 | 6 | 6 | 7.5 | 4 | 8 | 8 | 8 |
+| Debugging / failure-mode | 6 | 5 | 4 | 4 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 4 | 2 | 3 | 3.5 | 2.5 | 4 | 3 | 4 |
+| Code quality | 4 | 4 | 2 | 4 | 3 | 2 | 2 | 3 | 2 | 3 | 2 | 2 | 3 | 2 | 3 | 1 | 1 | 2 | 2 | 3 | 1 | 2 |
+| **Total** | **40** | **36** | **26** | **35** | **31** | **26** | **26** | **31** | **29** | **31** | **30** | **27** | **33** | **30** | **32** | **21** | **19** | **24** | **17.5** | **31** | **25** | **28** |
 
 **Leaderboard (sync only):** Qwen 3.8-27B-FP8 (36) · Q6K (35) · Sonnet (33) · DS-V4-0731 (32) · local 8-bit / NVFP4 / 35B-A3B-4bit / Laguna (31 tie)
 
@@ -23,20 +23,21 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 ## Architectural Approaches
 
-| Aspect | 3.8-27B-FP8 | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 |
-|--------|-------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|-----------------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|
-| **State tables** | 1 table: `sync_state` | 1 table: `sync_checkpoints` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_state` | 1 table: `sync_state` | 1 table: `checkpoints` | 1 table: `sync_state` | 2 tables: `sync_state` + `pending_comments` | 1 table: `sync_checkpoints` | 1 table: `sync_state` | 1 table: `sync_state` | 1 table: `sync_state` | 1 table: `sync_progress` | JSON file (`.checkpoints.json`) — not in SQLite | 1 table: `sync_checkpoint` | 1 table: `sync_state` | 1 table: `sync_state` |
-| **Checkpoint granularity** | Per-page | Per-page + `max_commented_issue_id` high-water mark | Per-page | Per-issue | Per-issue | Per-page | Per-page | Per-page | Per-page (with "back up one page" safety margin) | Per-page | Per-page (+ deferred comments checkpointing) | Per-page | Per-page (`last_page`; bookmark cleared on completion) | `since`-based (timestamp) | Per-issue (`last_issue_id`, re-fetches pages on resume) | `since`-based (timestamp); 1-second buffer hedge | Per-issue (`last_issue_number`; skips ≤ checkpoint on resume) | Per-page | Per-page | Per-issue (`last_issue_id` + `last_created_at`; mid-page resume) |
-| **Comments handling** | Inline fetch for newly-added issues only on resume; page-level atomic commit covers inner loop | High-water mark (`max_commented_issue_id`) — skips already-fetched comments on resume | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, dead `start_page` param (always 1) | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Deferred to separate pass with per-issue checkpoint | Inline fetch, no inner checkpoint (error-caught) | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint (scope bug) | Inline fetch, try/except per issue | `comments_fetched` field written but never read; effectively no comment checkpoint | Inline fetch; `conn.commit()` at end of `fetch_comments_for_issue()`; no inner checkpoint | Inline fetch; docstring argues upsert idempotency; dead `last_comment_id` column never used | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint |
-| **Checkpoint/data transaction coupling** | Strong (page data + `set_sync_state` in same `conn.commit()`) | Weak (separate commits) | Weak (separate commits) | Weak | Stronger (same commit path) | Weak (separate commits) | Weak (separate commits) | Weak (checkpoint after commit) | Weak (checkpoint written after commit, not atomic) | Weak (separate commits) | Medium (implicit/partially coupled) | Weak (separate commits) | Implicit atomic (page data + bookmark in same sqlite3 implicit txn; single `conn.commit()`) | Weak (progress saved after commit; last-repo never committed) | Weak (state lags one issue) | Weak (separate commits: page data first, progress second) | None (checkpoint in separate JSON file; no transactional coupling to DB) | Strong (issue + comments + checkpoint committed together via `save_checkpoint`) | Weak (checkpoint committed separately after data) | Partial (per-issue commits; state updated alongside each issue, not a page-level transaction) |
-| **CLI reset flag** | None | `--reset` | `--reset` | None | None | None | None | `--full` | None | `--fresh` | `--reset` | None | None (bookmark auto-clears on completion) | None | None | `--force` | None (README documents SQL `DELETE` to force re-sync) | None | None | None |
-| **README update** | Yes | Yes | Yes | No | No | Yes | No | No | No | No | Yes | No | Yes | No | No | Yes | Yes | No | No | No |
+| Aspect | 3.8-27B-FP8 | 3.8-27B-4bit | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 |
+|--------|-------------|--------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|-----------------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|
+| **State tables** | 1 table: `sync_state` | 1 table: `sync_progress` | 1 table: `sync_checkpoints` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_progress` | 1 table: `sync_state` | 1 table: `sync_state` | 1 table: `checkpoints` | 1 table: `sync_state` | 2 tables: `sync_state` + `pending_comments` | 1 table: `sync_checkpoints` | 1 table: `sync_state` | 1 table: `sync_state` | 1 table: `sync_state` | 1 table: `sync_progress` | JSON file (`.checkpoints.json`) — not in SQLite | 1 table: `sync_checkpoint` | 1 table: `sync_state` | 1 table: `sync_state` |
+| **Checkpoint granularity** | Per-page | Per-page (`max_id` after each page commit) | Per-page + `max_commented_issue_id` high-water mark | Per-page | Per-issue | Per-issue | Per-page | Per-page | Per-page | Per-page (with "back up one page" safety margin) | Per-page | Per-page (+ deferred comments checkpointing) | Per-page | Per-page (`last_page`; bookmark cleared on completion) | `since`-based (timestamp) | Per-issue (`last_issue_id`, re-fetches pages on resume) | `since`-based (timestamp); 1-second buffer hedge | Per-issue (`last_issue_number`; skips ≤ checkpoint on resume) | Per-page | Per-page | Per-issue (`last_issue_id` + `last_created_at`; mid-page resume) |
+| **Comments handling** | Inline fetch for newly-added issues only on resume; page-level atomic commit covers inner loop | Inline fetch inside page loop; page-level commit covers inner loop but not documented | High-water mark (`max_commented_issue_id`) — skips already-fetched comments on resume | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, dead `start_page` param (always 1) | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint | Deferred to separate pass with per-issue checkpoint | Inline fetch, no inner checkpoint (error-caught) | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint (scope bug) | Inline fetch, try/except per issue | `comments_fetched` field written but never read; effectively no comment checkpoint | Inline fetch; `conn.commit()` at end of `fetch_comments_for_issue()`; no inner checkpoint | Inline fetch; docstring argues upsert idempotency; dead `last_comment_id` column never used | Inline fetch, no inner checkpoint | Inline fetch, no inner checkpoint |
+| **Checkpoint/data transaction coupling** | Strong (page data + `set_sync_state` in same `conn.commit()`) | Weak (page data commit then separate `mark_repo_progress` commit) | Weak (separate commits) | Weak (separate commits) | Weak | Stronger (same commit path) | Weak (separate commits) | Weak (separate commits) | Weak (checkpoint after commit) | Weak (checkpoint written after commit, not atomic) | Weak (separate commits) | Medium (implicit/partially coupled) | Weak (separate commits) | Implicit atomic (page data + bookmark in same sqlite3 implicit txn; single `conn.commit()`) | Weak (progress saved after commit; last-repo never committed) | Weak (state lags one issue) | Weak (separate commits: page data first, progress second) | None (checkpoint in separate JSON file; no transactional coupling to DB) | Strong (issue + comments + checkpoint committed together via `save_checkpoint`) | Weak (checkpoint committed separately after data) | Partial (per-issue commits; state updated alongside each issue, not a page-level transaction) |
+| **CLI reset flag** | None | `--reset` | `--reset` | `--reset` | None | None | None | None | `--full` | None | `--fresh` | `--reset` | None | None (bookmark auto-clears on completion) | None | None | `--force` | None (README documents SQL `DELETE` to force re-sync) | None | None | None |
+| **README update** | Yes | Yes | Yes | Yes | No | No | Yes | No | No | No | No | Yes | No | Yes | No | No | Yes | Yes | No | No | No |
 
 ---
 
 ## Key Differences
 
 - **Qwen 3.8-27B-FP8 scores the highest on sync (36/40)** — the benchmark best, topping Q6K (35/40) and every other model. Correct per-page checkpoint granularity with `get_sync_state()`/`set_sync_state()` helpers, strong transactional coupling (page data and progress marker committed atomically in a single `conn.commit()`), WAL mode with `PRAGMA wal_checkpoint(TRUNCATE)` on shutdown, full marks on existing-code respect (8/8) and code quality (4/4), and a clear README "Resumability" section. Loses points on not naming the per-page-vs-per-record tradeoff and no schema versioning for `sync_state`.
+- **Qwen 3.8-27B-4bit (UD-Q4_K_XL)** scores 26/40 on sync — 10 points below the FP8 co-winner on the same base model. Picks the right per-page `sync_progress` structure with centralized helpers (`mark_repo_progress`/`load_repo_progress`/`reset_repo_progress`), `--reset` flag, and excellent README documentation. Undermined by a critical `since` bug: passes an integer issue ID to GitHub's `since` parameter (which expects an ISO 8601 timestamp), conflating ID-based checkpointing with timestamp-based filtering. Checkpoint also written in a separate transaction from page data.
 - **Q6K scores 35/40 on sync** — correct per-page granularity, full marks on existing-code respect (8/8) and code quality (4/4), and a unique `max_commented_issue_id` high-water mark to efficiently skip already-fetched comments on resume. Updates the README. Minor deduction on transaction atomicity (checkpoint in separate commit from data) and not explicitly naming the per-page vs per-record tradeoff.
 - **DeepSeek-V4-Flash-0731 IQ3_XXS scores 32/40 on sync** — correct per-page granularity with centralized bookmark helpers (`get_bookmark`/`save_bookmark`/`clear_bookmark`). Implicit but correct atomic transactions (page data + bookmark in single `conn.commit()`), auto-clears bookmark on completion so normal runs are full syncs, and updates the README with a clear "Resumable" section. Full marks on existing-code respect (8/8). Loses points on not naming the granularity tradeoff and not checkpointing the inner comment loop.
 - Sonnet remains the only model that explicitly addresses nested-loop resumability in architecture, but Q6K's high-water mark is a practical middle ground that handles the same problem for most real-world repos.
@@ -59,14 +60,14 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 ## Strong/Weak Signals
 
-| Signal | 3.8-27B-FP8 | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 |
-|--------|-------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|--------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|
-| State stored in `issues.db` (not JSON) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Per-repo cursors | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| State in same transaction as page commits | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ | ✅ (implicit) | ❌ | ❌ | ❌ | ✅ |
-| Notes per-page-vs-per-record tradeoff | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Updates README | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| Uses `since` (conflates with resumability) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ ⚠️ conflated | ❌ | ❌ ⚠️ conflated | ❌ |
+| Signal | 3.8-27B-FP8 | 3.8-27B-4bit | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 |
+|--------|-------------|--------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|--------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|
+| State stored in `issues.db` (not JSON) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Per-repo cursors | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| State in same transaction as page commits | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ | ✅ (implicit) | ❌ | ❌ | ❌ | ✅ |
+| Notes per-page-vs-per-record tradeoff | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Updates README | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Uses `since` (conflates with resumability) | ❌ | ❌ ⚠️ conflated (ID passed to timestamp param) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ ⚠️ conflated | ❌ | ❌ ⚠️ conflated | ❌ |
 
 ---
 
@@ -101,6 +102,11 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 ### Where Models Fell Short (Sync)
 
+**Qwen 3.8-27B-4bit (UD-Q4_K_XL) (26/40)**
+- Correct per-page `sync_progress` structure with centralized helpers and excellent README.
+- Critical `since` bug: passes integer issue ID to GitHub's timestamp parameter.
+- Checkpoint written in separate transaction from page data.
+
 **Ornith-1.0-35B (21/40)**
 - Transaction ordering bug: `save_progress` after `conn.commit()`; last repo's progress never durably stored.
 - Comment-fetch scope regression: comments fetched for PRs too.
@@ -125,7 +131,7 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 - **Ambiguity naming is weak overall**: most models silently pick per-page checkpointing without naming alternatives.
 - **Transactional reasoning is often implicit**: explicit partial-failure discussion is limited.
-- **Benchmark-optimized agentic coding ≠ architectural judgment**: Ornith places 17th of 20 overall; transaction ordering bug and comment-fetch regression on sync are primary weaknesses.
+- **Benchmark-optimized agentic coding ≠ architectural judgment**: Ornith places 18th of 21 overall; transaction ordering bug and comment-fetch regression on sync are primary weaknesses.
 
 ---
 
