@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+issues.db
+issues.db-journal
+issues.db-wal
+issues.db-shm
+.opencode/
