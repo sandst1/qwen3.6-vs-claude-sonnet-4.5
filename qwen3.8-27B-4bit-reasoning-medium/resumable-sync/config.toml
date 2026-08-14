@@ -1,0 +1,17 @@
+# GitHub repos to sync issues from.
+# Use small repos for testing — large ones will hit unauthenticated rate limits fast.
+repos = [
+    "sqlite/sqlite",
+    "python/peps",
+]
+
+# Optional. If unset, uses unauthenticated GitHub API (60 req/hr rate limit).
+# github_token = "ghp_..."
+
+per_page = 100
+log_level = "INFO"
+
+# How far back (in hours) an incremental sync looks past the last completed run.
+# A larger value is safer against clock skew / pagination edge cases but re-fetches
+# more. Defaults to 24 if unset. Only affects repos that have already fully synced.
+# incremental_overlap_hours = 24
