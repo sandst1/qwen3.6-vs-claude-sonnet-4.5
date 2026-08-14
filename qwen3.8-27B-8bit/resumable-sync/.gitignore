@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+issues.db
+issues.db-journal
+issues.db-wal
+issues.db-shm
+test_resume.db
+test_resume.db-wal
+test_resume.db-shm
+.opencode/
