@@ -8,16 +8,16 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 ## Score Breakdown
 
-| Criterion | Max | 3.8-27B-FP8 | 3.8-FP8 (med) | 3.8-27B-4bit | 3.8-4bit (med) | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | Opus 4.6 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 |
-|-----------|-----|-------------|---------------|--------------|----------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|------------|----------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|
-| Architectural judgment | 12 | 11 | 11 | 10 | 11 | 11 | 10 | 8 | 8 | 10 | 10 | 10 | 10 | 9 | 11 | 10 | 10 | 10 | 7 | 7 | 6 | 5 | 9 | 7 | 8 |
-| Ambiguity-handling | 10 | 8 | 6 | 3 | 7 | 8 | 7 | 6 | 5 | 7 | 7 | 7 | 7 | 5 | 7 | 7 | 7 | 7 | 5 | 2 | 5 | 4 | 7 | 6 | 6 |
-| Existing-code respect | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 6 | 6 | 7.5 | 4 | 8 | 8 | 8 |
-| Debugging / failure-mode | 6 | 5 | 5 | 4 | 4 | 4 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 5 | 3 | 4 | 2 | 3 | 3.5 | 2.5 | 4 | 3 | 4 |
-| Code quality | 4 | 4 | 4 | 2 | 4 | 4 | 3 | 2 | 2 | 3 | 2 | 3 | 2 | 2 | 3 | 3 | 2 | 3 | 1 | 1 | 2 | 2 | 3 | 1 | 2 |
-| **Total** | **40** | **36** | **34** | **26** | **34** | **35** | **31** | **26** | **26** | **31** | **29** | **31** | **30** | **27** | **33** | **33** | **30** | **32** | **21** | **19** | **24** | **17.5** | **31** | **25** | **28** |
+| Criterion | Max | 3.8-27B-FP8 | 3.8-FP8 (med) | 3.8-27B-4bit | 3.8-4bit (med) | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | Opus 4.6 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 | Flash-Next Q3 |
+|-----------|-----|-------------|---------------|--------------|----------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|------------|----------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|---------------|
+| Architectural judgment | 12 | 11 | 11 | 10 | 11 | 11 | 10 | 8 | 8 | 10 | 10 | 10 | 10 | 9 | 11 | 10 | 10 | 10 | 7 | 7 | 6 | 5 | 9 | 7 | 8 | 10 |
+| Ambiguity-handling | 10 | 8 | 6 | 3 | 7 | 8 | 7 | 6 | 5 | 7 | 7 | 7 | 7 | 5 | 7 | 7 | 7 | 7 | 5 | 2 | 5 | 4 | 7 | 6 | 6 | 7 |
+| Existing-code respect | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 8 | 7 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 6 | 6 | 7.5 | 4 | 8 | 8 | 8 | 8 |
+| Debugging / failure-mode | 6 | 5 | 5 | 4 | 4 | 4 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 5 | 3 | 4 | 2 | 3 | 3.5 | 2.5 | 4 | 3 | 4 | 3 |
+| Code quality | 4 | 4 | 4 | 2 | 4 | 4 | 3 | 2 | 2 | 3 | 2 | 3 | 2 | 2 | 3 | 3 | 2 | 3 | 1 | 1 | 2 | 2 | 3 | 1 | 2 | 3 |
+| **Total** | **40** | **36** | **34** | **26** | **34** | **35** | **31** | **26** | **26** | **31** | **29** | **31** | **30** | **27** | **33** | **33** | **30** | **32** | **21** | **19** | **24** | **17.5** | **31** | **25** | **28** | **31** |
 
-**Leaderboard (sync only):** Qwen 3.8-27B-FP8 (36) · Q6K (35) · Qwen 3.8-FP8 reasoning-medium / 3.8-4bit reasoning-medium (34 tie) · Sonnet / Opus 4.6 (33 tie) · DS-V4-0731 (32) · local 8-bit / NVFP4 / 35B-A3B-4bit / Laguna (31 tie)
+**Leaderboard (sync only):** Qwen 3.8-27B-FP8 (36) · Q6K (35) · Qwen 3.8-FP8 reasoning-medium / 3.8-4bit reasoning-medium (34 tie) · Sonnet / Opus 4.6 (33 tie) · DS-V4-0731 (32) · Flash-Next UD-Q3_K_XL / local 8-bit / NVFP4 / 35B-A3B-4bit / Laguna (31 tie)
 
 ---
 
@@ -36,6 +36,7 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 
 ## Key Differences
 
+- **Qwen3.8-Flash-Next UD-Q3_K_XL (unsloth) scores 31/40 on sync** — correct, focused per-page checkpoints stored per repository in `sync_state`. `checkpoint()` writes the next-page cursor before the same `conn.commit()` that persists page data, so a crash cannot advance the cursor ahead of the data. The implementation stays within crash-recovery scope and documents idempotent page retries. It loses points for silently choosing the per-page granularity, leaving the comments subloop rationale implicit, and omitting state-schema versioning.
 - **Qwen 3.8-27B-FP8 scores the highest on sync (36/40)** — the benchmark best, topping Q6K (35/40) and every other model (including the 73/80 overall winner). Correct per-page checkpoint granularity with `get_sync_state()`/`set_sync_state()` helpers, strong transactional coupling (page data and progress marker committed atomically in a single `conn.commit()`), WAL mode with `PRAGMA wal_checkpoint(TRUNCATE)` on shutdown, full marks on existing-code respect (8/8) and code quality (4/4), and a clear README "Resumability" section. Loses points on not naming the per-page-vs-per-record tradeoff and no schema versioning for `sync_state`.
 - **Qwen 3.8-27B-FP8 (reasoning-medium)** scores 34/40 on sync — 2 points below the thinking-off runner-up on the same FP8 checkpoint, tying 3.8-4bit reasoning-medium. Same per-page checkpointing via `get_checkpoint()`/`save_checkpoint()`, atomic page+checkpoint transactions, WAL mode, comprehensive `test_sync.py` (9 cases), `--status`/`--force` CLI flags, and README update. Loses points on scope creep: adds incremental sync via `cutoff` timestamp (`sync_issues_incremental`) conflating crash recovery with incremental refresh — the same class of mistake Step-3.7-Flash made with GitHub's `since` parameter, though implemented correctly here. Also silent on the per-page-vs-per-record tradeoff.
 - **Qwen 3.8-27B-4bit (UD-Q4_K_XL, reasoning-medium)** scores 34/40 on sync — ties FP8 reasoning-medium and is 8 points above the thinking-off 4bit run on the same GGUF. Correct per-page `sync_state` with `get_sync_state()`/`set_sync_state()`, implicit atomic page+cursor commits (`set_sync_state` commits pending upserts), `--full` flag, and a comprehensive README that distinguishes crash-recovery resume from incremental refresh. Incremental sync via GitHub's `since` is still scope creep, but unlike thinking-off 4bit it uses a real ISO timestamp watermark (`last_run_at`) plus a 24h overlap window. Silent on the per-page-vs-per-record tradeoff; page upserts are not wrapped in an explicit `BEGIN`/`COMMIT`.
@@ -81,6 +82,12 @@ Starter code: `original/resumable-sync/` · Rubric: [BENCHMARK.md](./BENCHMARK.m
 1. **34/40 on sync** — ties FP8 reasoning-medium for 3rd-best, behind only thinking-off FP8 (36) and Q6K (35). Same per-page `sync_state` helpers as the FP8 thinking-off run (`get_sync_state()` / `set_sync_state()`).
 2. **8-point jump vs thinking-off 4bit** (26 → 34) on the same GGUF: uses a real ISO timestamp watermark for incremental sync instead of passing an issue ID to GitHub's `since` parameter, and commits the page cursor together with pending upserts.
 3. **README distinguishes crash recovery from incremental refresh** — still scope creep, but documented as two features rather than conflated into one broken `since` call.
+
+### Where Qwen3.8-Flash-Next UD-Q3_K_XL Was Competitive
+
+1. **31/40 on sync** — ties the local 8-bit, NVIDIA NVFP4, 35B-A3B-4bit, and Laguna implementations with a correct per-page checkpoint in the same SQLite database.
+2. **Strong transaction coupling** — page data and the cursor are committed together, avoiding the separate-transaction weakness common to several 31-point runs.
+3. **Focused scope and operational documentation** — no incremental-sync conflation, with a README that explains restart behavior and safe idempotent retries.
 
 ### Where Qwen 3.8-27B-FP8 (reasoning-medium) Was Competitive
 

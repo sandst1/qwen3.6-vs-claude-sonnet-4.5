@@ -8,16 +8,16 @@ Starter code: `original/pluggable-widgets/` · Rubric: [BENCHMARK.md](./BENCHMAR
 
 ## Score Breakdown
 
-| Criterion | Max | 3.8-27B-FP8 | 3.8-FP8 (med) | 3.8-27B-4bit | 3.8-4bit (med) | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | Opus 4.6 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 |
-|-----------|-----|-------------|---------------|--------------|----------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|------------|----------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|
-| Architectural judgment | 14 | 11 | 11 | 12 | 13 | 13 | 13 | 11 | 11 | 10 | 13 | 12 | 11 | 13 | 13 | 11 | 10 | 13 | 9 | 9 | 10 | 12.5 | 13 | 12 | 11 |
-| Ambiguity-handling | 10 | 7 | 7 | 8 | 10 | 7 | 8.5 | 5 | 8 | 5 | 7 | 7 | 7 | 7 | 6 | 8 | 8 | 8 | 8 | 6 | 7 | 7 | 7 | 7 | 5 |
-| Existing-code respect | 8 | 8 | 8 | 7 | 8 | 7 | 7 | 7 | 7 | 8 | 8 | 8 | 8 | 8 | 5.5 | 7.5 | 7 | 7 | 8 | 7 | 7 | 5 | 7.5 | 7 | 7 |
-| Frontend craft | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 2 | 3 | 3 | 3.5 | 3 | 2 | 2 | 3 | 3 | 3 | 4 | 3 | 3 | 2 | 3 | 3 | 2 | 3 |
-| Code quality | 4 | 3 | 4 | 3 | 4 | 3 | 3 | 3 | 4 | 2 | 3.5 | 2 | 3 | 3 | 3 | 4 | 3 | 4 | 3 | 2 | 3 | 3 | 3 | 3 | 3 |
-| **Total** | **40** | **33** | **34** | **34** | **39** | **34** | **35.5** | **28** | **33** | **28** | **35** | **32** | **31** | **30.5** | **32** | **33.5** | **32** | **37** | **30** | **27** | **24** | **33** | **33.5** | **31** | **29** |
+| Criterion | Max | 3.8-27B-FP8 | 3.8-FP8 (med) | 3.8-27B-4bit | 3.8-4bit (med) | 27B-Q6K | 27B-8bit (local) | 27B-4bit (OR) | 27B-4bit | 35B-A3B-4bit | 35B-A3B-8bit (pair) | NVFP4 | Unsloth-NVFP4 | AEON-NVFP4 | Sonnet 4.5 | Opus 4.6 | DS-V4-REAP-180B | DS-V4-0731-IQ3 | Ornith-35B-8bit | Step-3.7-Flash | A1-FP8 | Ternary-27B | Laguna-S2.1 | Muse Glimmer-30B | Unsloth-Muse-Q4 | Flash-Next Q3 |
+|-----------|-----|-------------|---------------|--------------|----------------|---------|------------------|---------------|----------|--------------|---------------------|-------|------------|------------|------------|----------|-----------------|----------------|-----------------|----------------|--------|-------------|-------------|-----------------|-----------------|---------------|
+| Architectural judgment | 14 | 11 | 11 | 12 | 13 | 13 | 13 | 11 | 11 | 10 | 13 | 12 | 11 | 13 | 13 | 11 | 10 | 13 | 9 | 9 | 10 | 12.5 | 13 | 12 | 11 | 14 |
+| Ambiguity-handling | 10 | 7 | 7 | 8 | 10 | 7 | 8.5 | 5 | 8 | 5 | 7 | 7 | 7 | 7 | 6 | 8 | 8 | 8 | 8 | 6 | 7 | 7 | 7 | 7 | 5 | 8 |
+| Existing-code respect | 8 | 8 | 8 | 7 | 8 | 7 | 7 | 7 | 7 | 8 | 8 | 8 | 8 | 8 | 5.5 | 7.5 | 7 | 7 | 8 | 7 | 7 | 5 | 7.5 | 7 | 7 | 8 |
+| Frontend craft | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 2 | 3 | 3 | 3.5 | 3 | 2 | 2 | 3 | 3 | 3 | 4 | 3 | 3 | 2 | 3 | 3 | 2 | 3 | 4 |
+| Code quality | 4 | 3 | 4 | 3 | 4 | 3 | 3 | 3 | 4 | 2 | 3.5 | 2 | 3 | 3 | 3 | 4 | 3 | 4 | 3 | 2 | 3 | 3 | 3 | 3 | 3 | 4 |
+| **Total** | **40** | **33** | **34** | **34** | **39** | **34** | **35.5** | **28** | **33** | **28** | **35** | **32** | **31** | **30.5** | **32** | **33.5** | **32** | **37** | **30** | **27** | **24** | **33** | **33.5** | **31** | **29** | **38** |
 
-**Leaderboard (widgets only):** 3.8-4bit reasoning-medium (39) · DS-V4-0731 (37) · local 8-bit (35.5) · 35B-A3B-8bit pair (35) · Q6K / 3.8-27B-4bit / 3.8-FP8 reasoning-medium (34 tie) · Laguna / Opus 4.6 (33.5 tie) · Qwen 3.8-FP8 thinking-off (33)
+**Leaderboard (widgets only):** 3.8-4bit reasoning-medium (39) · Flash-Next UD-Q3_K_XL (38) · DS-V4-0731 (37) · local 8-bit (35.5) · 35B-A3B-8bit pair (35) · Q6K / 3.8-27B-4bit / 3.8-FP8 reasoning-medium (34 tie) · Laguna / Opus 4.6 (33.5 tie) · Qwen 3.8-FP8 thinking-off (33)
 
 ---
 
@@ -37,6 +37,7 @@ Starter code: `original/pluggable-widgets/` · Rubric: [BENCHMARK.md](./BENCHMAR
 
 ## Key Differences
 
+- **Qwen3.8-Flash-Next UD-Q3_K_XL (unsloth) scores 38/40 on widgets** — the second-highest widget result, one point behind the 3.8-27B 4bit reasoning-medium run and ahead of DS-V4-Flash-0731 (37). It defines a typed `WidgetPlugin` contract, centralizes registration, cleanly separates plugin definitions from uniquely identified `WidgetInstance`s, and supports duplicate types. User customization is complete (add/remove/reorder/resize, native drag-and-drop, catalog) and state is persisted under a versioned, validated localStorage key. It earns full architecture, existing-code respect, frontend craft, and code-quality marks; the two-point ambiguity deduction is for delivering both user and developer extensibility without explicitly naming that fork.
 - **Qwen 3.8-27B-4bit (UD-Q4_K_XL, reasoning-medium) scores the highest on widgets (39/40)** — the new benchmark best, topping the previous leader (DS-V4-Flash-0731 at 37/40). Perfect `WidgetDefinition`/`WidgetInstance` type separation with unique instance `key`s (`crypto.randomUUID()`), Map registry with `registerWidget()` and duplicate-detection throw, both user-vs-developer forks named and implemented (10/10 ambiguity — the only perfect score on this dimension), versioned localStorage (`ops-dashboard.layout.v1`) with registry validation and de-dupe, native HTML5 drag-and-drop, consistent span-via-wrapper refactoring, and full marks on existing-code respect (8/8), frontend craft (4/4), and code quality (4/4). The only deduction is no settings abstraction on the widget contract (5/6).
 - **[DeepSeek-V4-Flash-0731 IQ3_XXS](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) scores 37/40 on widgets** — second-best, still topping every other model except 3.8-4bit reasoning-medium. Perfect `WidgetDefinition`/`WidgetInstance` type separation with a proper `instanceId`, full marks on both frontend craft (4/4) and code quality (4/4), clean Map registry with `registerWidget()` and duplicate detection, `sanitize()` validation on localStorage load, and a good widget README with an adding-a-widget guide. Consistent body-only refactoring with card chrome owned by Dashboard. Held back by silent user-vs-developer ambiguity (8/10), no generic settings on the contract, and no version in the localStorage key.
 - **Qwen 3.8-27B-4bit (UD-Q4_K_XL, thinking off) scores 34/40 on widgets** — ties Q6K for 5th-best and beats the FP8 thinking-off runner-up (33/40) on the same base model, but 5 points below the reasoning-medium run on the same GGUF. Clean `WidgetDef`/`WidgetPlacement` type split, Map registry with `registerWidget()` and duplicate detection, full frontend craft (4/4), appropriate scope (up/down reorder, no drag-and-drop over-engineering), and a good widget README with an adding-a-widget guide. Held back by no unique instance ID (one widget type per dashboard), implicit user-vs-developer ambiguity (8/10 but not explicitly stated), no settings schema, and an unversioned localStorage key (`dashboard-layout`).
@@ -93,6 +94,12 @@ Starter code: `original/pluggable-widgets/` · Rubric: [BENCHMARK.md](./BENCHMAR
 1. **Best widget score overall (39/40)** — tops every other model, including the previous best (DS-V4-Flash-0731 at 37/40). Full marks on ambiguity-handling (10/10 — the only perfect score on this dimension), existing-code respect (8/8), frontend craft (4/4), and code quality (4/4). Architectural judgment 13/14, losing only the settings-abstraction point.
 2. **Names both pluggability forks**: the README documents user customization (add/remove/reorder/reset) and developer extensibility (create a component, register it) as two interpretations of "pluggable" — the strong response the rubric asks for.
 3. **Perfect type/instance split** with unique instance `key`s (`crypto.randomUUID()`), constraint to one-per-type enforced in the UI rather than the data model, versioned localStorage with registry validation, and native HTML5 drag-and-drop.
+
+### Where Qwen3.8-Flash-Next UD-Q3_K_XL Led
+
+1. **Second-best widget score (38/40)** — one point behind the benchmark-leading 3.8-27B 4bit reasoning-medium run and one point ahead of DS-V4-Flash-0731.
+2. **Complete plugin architecture** — a typed `WidgetPlugin` contract, a single registry/registration point, and a `WidgetInstance` model with unique IDs that supports duplicate widget types.
+3. **Polished customization without dependencies** — versioned and validated localStorage, catalog-based addition, removal, resizing, and native HTML5 drag-and-drop all work together while preserving the existing dashboard design.
 
 ### Where Qwen 3.8-27B-FP8 (reasoning-medium) Was Competitive
 
